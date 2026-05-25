@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>にくきゅう天気予報 | 高精度アスファルト温度予報</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap");
+      body {
+        font-family: "Plus Jakarta Sans", "Noto Sans JP", sans-serif;
+        background-color: #f8fafc;
+      }
+      /* 横スクロールバー非表示 */
+      .scrollbar-none::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-none {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .transition-custom {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      /* キャンバスコンテナのスタイリング */
+      .graph-outer-container {
+        position: relative;
+        width: 100%;
+        height: 240px;
+        overflow: hidden;
+        touch-action: pan-y; /* スワイプ時の垂直スクロールはブラウザに任せ、水平ドラッグのみキャッチ */
+      }
+      .graph-scroll-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        cursor: grab;
+      }
+      .graph-scroll-area:active {
+        cursor: grabbing;
+      }
+    </style>
+  </head>
+  <body
+    class="text-slate-800 min-h-screen flex flex-col antialiased select-none"
+  >
+    <!-- ヘッダー -->
+    <header
+      class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-3.5 shadow-sm"
+    >
+      <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div
+            class="bg-gradient-to-tr from-orange-500 to-amber-500 text-white p-2.5 rounded-2xl shadow-md shadow-orange-500/10"
+          >
+            <i data-lucide="dog" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1
+              class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-1.5"
+            >
+              にくきゅう天気予報
+            </h1>
+            <p class="text-[10px] text-slate-400 font-semibold">
+              アスファルト熱地面の温度を予測し、愛犬の肉球🐾を守ります
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- メイン -->
+    <main class="flex-grow max-w-2xl w-full mx-auto px-4 py-6 space-y-6">
+      <!-- 位置情報取得エリア -->
+      <div
+        class="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4"
+      >
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div class="flex items-center space-x-3">
+            <div
+              class="p-2.5 bg-slate-50 text-slate-500 rounded-xl"
+              id="location-icon-box"
+            >
+              <i data-lucide="map-pin" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span
+                class="text-[10px] font-bold text-slate-400 block tracking-wider"
+                >現在地</span
+              >
+              <span id="location-name" class="text-sm font-bold text-slate-700"
+                >場所を特定してください</span
+              >
+            </div>
+          </div>
+          <button
+            onclick="getGeolocatedWeather()"
+            class="w-full sm:w-auto bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-custom flex items-center justify-center space-x-2"
+          >
+            <i data-lucide="navigation" class="w-4 h-4"></i>
+            <span>GPSから天気を読み込む</span>
+          </button>
+        </div>
+
+        <!-- ローディングインジケータ -->
+        <div
+          id="loading-state"
+          class="hidden py-10 flex-col items-center justify-center space-y-3"
+        >
+          <div class="animate-spin text-orange-500">
+            <i data-lucide="loader-2" class="w-8 h-8"></i>
+          </div>
+          <p id="loading-text" class="text-xs text-slate-500 font-semibold">
+            位置情報を特定中...
+          </p>
+        </div>
+
+        <!-- エラー表示 -->
+        <div
+          id="error-card"
+          class="hidden p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start space-x-3 text-rose-800"
+        >
+          <i
+            data-lucide="alert-circle"
+            class="w-5 h-5 shrink-0 mt-0.5 text-rose-500"
+          ></i>
+          <div class="text-xs space-y-1.5">
+            <p class="font-bold">気象情報を読み込めませんでした</p>
+            <p id="error-message">
+              位置情報の取得が許可されていないか、一時的なサーバーエラーです。
+            </p>
+            <button
+              onclick="tryDemoData()"
+              class="text-orange-600 font-bold underline block mt-1"
+            >
+              デモデータ（東京・晴れの夏日）で試す
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- リアルタイム判定結果（初期状態はダミー表示） -->
+      <div
+        id="result-card"
+        class="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[2.5rem] p-6 text-slate-500 relative overflow-hidden"
+      >
+        <div
+          class="relative z-10 flex flex-col items-center text-center py-10 space-y-4"
+        >
+          <div
+            class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100"
+          >
+            <i data-lucide="sun-dim" class="w-8 h-8"></i>
+          </div>
+          <div class="space-y-1">
+            <h2 class="text-lg font-bold text-slate-800">
+              アスファルト路面の状態を解析します
+            </h2>
+            <p class="text-xs text-slate-400 max-w-sm">
+              上のボタンをタップして位置情報を送信すると、現在のアスファルト予測温度および3日間（今日・明日・明後日）の適正予報グラフを表示します。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3日間お散歩タイムライン＆スワイプグラフ -->
+      <div
+        id="timeline-section"
+        class="hidden bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-5"
+      >
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-50 pb-4"
+        >
+          <div class="flex items-center space-x-2">
+            <div class="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-sm font-black text-slate-800">
+              アスファルト路面の温度予測
+            </h3>
+          </div>
+
+          <!-- 日付選択タブ -->
+          <div
+            class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold shrink-0 self-start sm:self-auto"
+          >
+            <button
+              onclick="changeActiveDay(0)"
+              id="day-tab-0"
+              class="day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm"
+            >
+              今日
+            </button>
+            <button
+              onclick="changeActiveDay(1)"
+              id="day-tab-1"
+              class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
+            >
+              明日
+            </button>
+            <button
+              onclick="changeActiveDay(2)"
+              id="day-tab-2"
+              class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
+            >
+              明後日
+            </button>
+          </div>
+        </div>
+
+        <!-- 動的にスライド可能な温度変動グラフエリア -->
+        <div class="space-y-1">
+          <div
+            class="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1"
+          >
+            <span class="flex items-center gap-1"
+              ><i data-lucide="info" class="w-3.5 h-3.5"></i
+              >左右にドラッグして全時間帯の温度を確認できます</span
+            >
+            <span id="graph-date-indicator" class="text-slate-700">本日</span>
+          </div>
+          <div
+            class="graph-outer-container rounded-2xl border border-slate-100 bg-slate-50/50"
+          >
+            <!-- インタラクティブなスワイプ折れ線グラフ -->
+            <div id="graph-scroll-area" class="graph-scroll-area">
+              <canvas id="line-graph-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 時間帯カードコンテナ -->
+        <div class="space-y-1 text-xs">
+          <div class="text-slate-400 font-bold px-1 pb-1">
+            24時間の詳細タイムテーブル
+          </div>
+          <div
+            class="space-y-2 max-h-[280px] overflow-y-auto pr-1"
+            id="timeline-cards-container"
+          >
+            <!-- JSで動的に構築されます -->
+          </div>
+        </div>
+
+        <!-- カラーマーカー説明 -->
+        <div
+          class="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[10px] font-bold pt-3 border-t border-slate-100 text-slate-500"
+        >
+          <span class="flex items-center"
+            ><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span
+            >安全（25℃以下）</span
+          >
+          <span class="flex items-center"
+            ><span class="w-2.5 h-2.5 rounded-full bg-yellow-400 mr-1.5"></span
+            >注意（25.1〜35℃）</span
+          >
+          <span class="flex items-center"
+            ><span class="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1.5"></span
+            >危険（35.1〜45℃）</span
+          >
+          <span class="flex items-center"
+            ><span class="w-2.5 h-2.5 rounded-full bg-rose-600 mr-1.5"></span
+            >絶対NG（45.1℃以上）</span
+          >
+        </div>
+      </div>
+
+      <!-- 根拠・出典・免責事項（アコーディオンUI） -->
+      <div class="space-y-3 pt-4">
+        <div
+          class="text-xs text-slate-400 font-bold px-1 flex items-center gap-1.5"
+        >
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          データの信頼性とご利用ガイド
+        </div>
+
+        <!-- アコーディオン1: 計算ロジックと根拠 -->
+        <div
+          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <button
+            onclick="toggleAccordion('acc-logic')"
+            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+          >
+            <span class="flex items-center gap-2">
+              <i data-lucide="calculator" class="w-4 h-4 text-orange-500"></i>
+              計算のロジックと根拠の出典
+            </span>
+            <i
+              data-lucide="chevron-down"
+              id="acc-logic-icon"
+              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+            ></i>
+          </button>
+          <div
+            id="acc-logic-content"
+            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+          >
+            <p>
+              アスファルトの表面温度は、単純な「気温」だけではなく、太陽光による熱供給（日射）と周囲の空気への放熱（対流および放射）のバランスである<strong>「地表面熱収支方程式」</strong>によって決まります。
+            </p>
+            <div
+              class="p-3 bg-slate-50 rounded-xl font-mono text-[11px] text-slate-700 space-y-1"
+            >
+              <p class="font-bold text-slate-800">
+                【予測アルゴリズムの物理パラメータ】
+              </p>
+              <p>・アスファルト日射吸収率: 0.85（一般的な高密舗装基準）</p>
+              <p>
+                ・対流放熱係数: 10.0 + 4.0 ×
+                風速(m/s)（風による強制冷却流モデル）
+              </p>
+              <p>
+                ・天空長波冷却（放射冷却）:
+                夜間無風時に最大約-3.5℃のマイナス補正
+              </p>
+            </div>
+            <p class="text-[10px] text-slate-400">
+              【学術的出典・参考文献】<br />
+              1.
+              土木学会論文集：『熱収支気象モデルを用いた各種舗装の路面温度予測に関する研究』<br />
+              2.
+              日本道路協会：『舗装設計施工指針』における舗装熱物性定数パラメータ
+            </p>
+          </div>
+        </div>
+
+        <!-- アコーディオン2: 肉球の安全温度基準 -->
+        <div
+          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <button
+            onclick="toggleAccordion('acc-safety')"
+            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+          >
+            <span class="flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i>
+              肉球が安全かどうかの温度区切りの根拠
+            </span>
+            <i
+              data-lucide="chevron-down"
+              id="acc-safety-icon"
+              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+            ></i>
+          </button>
+          <div
+            id="acc-safety-content"
+            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+          >
+            <p>
+              犬の肉球（角質層および表皮組織）は人間よりも耐久性があるものの、生きた組織であるため**熱伝達によるタンパク質の変性（火傷）**を回避できません。本アプリの危険度判定の境界は、以下の生物物理学的データに準拠しています：
+            </p>
+            <ul class="list-disc pl-4 space-y-2">
+              <li>
+                <strong>安全領域 (25℃以下):</strong>
+                犬の平均体温（約38.5℃）より十分低く、直射日光による持続的加熱が発生しない熱的平衡状態。
+              </li>
+              <li>
+                <strong>注意領域 (25.1〜35.0℃):</strong>
+                肉球への直接的な損傷リスクは極めて低いですが、犬の体高が低いためにアスファルトからの「輻射熱（放射熱）」を受け、体温調整が困難になり始める臨界領域。
+              </li>
+              <li>
+                <strong>危険領域 (35.1〜45.0℃):</strong>
+                皮膚温度が44℃を超えて長時間接触すると、徐々に細胞の熱損傷（低温熱傷）が進行し始めます。
+              </li>
+              <li>
+                <strong>絶対NG領域 (45.1℃以上):</strong>
+                アスファルト表面が50℃に達すると**「約1分間の接触」**で、60℃では**「数秒」**で真皮に至る熱傷（II度〜III度熱傷）を引き起こすことが実験的臨床データから知られています。
+              </li>
+            </ul>
+            <p class="text-[10px] text-slate-400">
+              【獣医学的出典・参考文献】<br />
+              1. 全米獣医師会（AVMA）夏の安全ガイドライン：『The 5-Second
+              Rule（手の甲をアスファルトに5秒間押し当てて熱いと感じたら、犬にとって歩行不可）』に基づく物理的境界判定の補正。<br />
+              2. 獣医救急医療学会（VECCS）熱中症および環境性熱障害に関する知見。
+            </p>
+          </div>
+        </div>
+
+        <!-- アコーディオン3: 免責事項 -->
+        <div
+          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <button
+            onclick="toggleAccordion('acc-disclaimer')"
+            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+          >
+            <span class="flex items-center gap-2">
+              <i data-lucide="file-text" class="w-4 h-4 text-slate-500"></i>
+              ご利用にあたっての免責事項
+            </span>
+            <i
+              data-lucide="chevron-down"
+              id="acc-disclaimer-icon"
+              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+            ></i>
+          </button>
+          <div
+            id="acc-disclaimer-content"
+            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-2.5 bg-slate-50/20"
+          >
+            <p>
+              1.
+              本サービスが提供する路面予測温度は、Open-Meteoが提供する広域気象データに基づく理論計算値です。
+            </p>
+            <p>
+              2. アスファルトの実際の温度は、<strong
+                >周囲 of
+                建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong
+              >などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
+            </p>
+            <p class="font-bold text-slate-700">
+              3.
+              お散歩を開始される前には、飼い主様ご自身の手の甲をアスファルトに5秒間押し当てる等の物理的チェック（5秒ルール）を必ず併用してください。
+            </p>
+            <p>
+              4.
+              本ウェブサイトに掲載された情報や予測値に基づいて発生した生体の怪我、熱中症、火傷、その他のトラブルについて、制作者およびデータ提供元は一切の責任を負いかねますので予めご了承ください。
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- フッター -->
+    <footer
+      class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 space-y-2 mt-auto"
+    >
+      <p>© 2026 わんこお散歩ロード予測 Project</p>
+      <p class="text-[10px] px-4">
+        気象予測エンジン:
+        <a
+          href="https://open-meteo.com/"
+          class="underline hover:text-orange-500"
+          >Open-Meteo API</a
+        >
+        (非営利目的フリープラン)
+      </p>
+    </footer>
+
+    <script>
+      // グローバルデータ保持
+      let weatherForecastData = null;
+      let selectedDayOffset = 0; // 0: 今日, 1: 明日, 2: 明後日
+
+      // グラフ描画・スクロール用システム（DOMContentLoadedで安全に初期化）
+      let canvas, ctx, scrollArea, outerContainer;
+
+      // ドラッグ制御用ステート
+      let isDragging = false;
+      let startX = 0;
+      let scrollLeftOffset = 0; // 現在のスクロール量
+      let maxScrollWidth = 1200; // 24時間の幅合計
+      let viewportWidth = 0;
+
+      // グラフエリア（Canvasサイズ設定）
+      const canvasHeight = 240;
+      const hourStepWidth = 70; // 1時間あたりの幅px
+
+      // --- DOM要素とイベントリスナーの安全な初期化処理 ---
+      function initDOMElements() {
+        canvas = document.getElementById("line-graph-canvas");
+        if (canvas) {
+          ctx = canvas.getContext("2d");
+        }
+        scrollArea = document.getElementById("graph-scroll-area");
+        outerContainer = document.querySelector(".graph-outer-container");
+      }
+
+      function setupEventListeners() {
+        if (!scrollArea) return;
+        // マウスイベント
+        scrollArea.addEventListener("mousedown", (e) =>
+          handleDragStart(e.clientX),
+        );
+        window.addEventListener("mousemove", (e) => handleDragMove(e.clientX));
+        window.addEventListener("mouseup", () => handleDragEnd());
+
+        // タッチイベント (スマホ・タブレット対応)
+        scrollArea.addEventListener("touchstart", (e) => {
+          handleDragStart(e.touches[0].clientX);
+        });
+        scrollArea.addEventListener("touchmove", (e) => {
+          handleDragMove(e.touches[0].clientX);
+        });
+        scrollArea.addEventListener("touchend", () => {
+          handleDragEnd();
+        });
+      }
+
+      // --- アコーディオン展開処理 ---
+      function toggleAccordion(id) {
+        const content = document.getElementById(`${id}-content`);
+        const icon = document.getElementById(`${id}-icon`);
+
+        if (!content || !icon) return;
+        const isHidden = content.classList.contains("hidden");
+        if (isHidden) {
+          content.classList.remove("hidden");
+          icon.classList.add("rotate-180");
+        } else {
+          content.classList.add("hidden");
+          icon.classList.remove("rotate-180");
+        }
+      }
+
+      // --- 高精度アスファルト路面温度推定（熱収支物理モデル） ---
+      function calculateAdvancedSurfaceTemperature(Ta, Rs, U) {
+        const absorbedSolar = Rs * 0.85;
+        const heatTransferCoeff = 10.0 + 4.0 * Math.max(0.1, U);
+
+        let longwaveCooling = 0;
+        if (Rs < 10) {
+          longwaveCooling = -3.5 * (1.0 - U * 0.05);
+        }
+
+        let tempRise = 0;
+        if (absorbedSolar > 0) {
+          tempRise = absorbedSolar / heatTransferCoeff;
+          if (tempRise > 25) {
+            tempRise = 25 + (tempRise - 25) * 0.5;
+          }
+        }
+
+        const estimatedTs = Ta + tempRise + longwaveCooling;
+        return Math.max(-15, Math.min(75, estimatedTs));
+      }
+
+      // --- 温度判定閾値とスタイル設定 ---
+      function getStatusMetadata(surfaceTemp) {
+        if (surfaceTemp <= 25) {
+          return {
+            label: "安全（お散歩に最適）",
+            colorClass: "from-emerald-500 to-teal-600",
+            borderClass: "border-emerald-200",
+            textClass: "text-emerald-600",
+            bgClass: "bg-emerald-50 text-emerald-800",
+            indicator: "bg-emerald-500",
+            chartColor: "#10b981", // クリーンな緑
+            icon: "smile",
+            advice:
+              "路面温度が低く安全です。肉球へのダメージの心配はなく、快適にお散歩ができます。",
+          };
+        } else if (surfaceTemp <= 35) {
+          return {
+            label: "注意（日陰を選んで）",
+            colorClass: "from-yellow-400 to-amber-500 text-slate-900", // 背景は明るい黄色
+            borderClass: "border-yellow-300",
+            textClass: "text-amber-600",
+            bgClass: "bg-yellow-50 text-yellow-900 border border-yellow-100",
+            indicator: "bg-yellow-400",
+            chartColor: "#eab308", // 明確なイエローゴールド
+            icon: "meh",
+            advice:
+              "アスファルトが温まっています。可能な限り影を歩くか、芝生・草むらルートを選択してください。",
+          };
+        } else if (surfaceTemp <= 45) {
+          return {
+            label: "危険（日向は絶対NG）",
+            colorClass: "from-orange-500 to-red-500",
+            borderClass: "border-orange-300",
+            textClass: "text-orange-600",
+            bgClass: "bg-orange-50 text-orange-800",
+            indicator: "bg-orange-500",
+            chartColor: "#f97316", // 鮮やかなオレンジ
+            icon: "frown",
+            advice:
+              "数分で肉球に火傷を負う恐れがあります。アスファルトからの距離が近いワンちゃんは熱中症の危険大です。",
+          };
+        } else {
+          return {
+            label: "絶対NG（重大な火傷リスク）",
+            colorClass: "from-rose-600 to-red-800",
+            borderClass: "border-rose-400",
+            textClass: "text-rose-600",
+            bgClass: "bg-rose-50 text-rose-800",
+            indicator: "bg-rose-600",
+            chartColor: "#e11d48", // 警告を伝えるローズレッド
+            icon: "alert-triangle",
+            advice:
+              "路面はフライパン状態です。一瞬の接触でも極めて危険なため、地面が完全に冷めるまで外出は控えてください。",
+          };
+        }
+      }
+
+      // --- GPS連動およびデータ取得（ハイブリッド位置特定） ---
+      function getGeolocatedWeather() {
+        const loader = document.getElementById("loading-state");
+        const errorCard = document.getElementById("error-card");
+
+        if (errorCard) errorCard.classList.add("hidden");
+        if (loader) loader.classList.remove("hidden");
+        document.getElementById("loading-text").innerText = "現在地を特定中...";
+
+        const geoOptions = {
+          enableHighAccuracy: false,
+          timeout: 8000,
+          maximumAge: 300000,
+        };
+
+        if (!window.isSecureContext && location.hostname !== "localhost") {
+          fallbackToIPGeolocation(
+            new Error("secure context required for geolocation"),
+          );
+          return;
+        }
+
+        if (!navigator.geolocation) {
+          fallbackToIPGeolocation(new Error("geolocation unavailable"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            document.getElementById("location-name").innerText =
+              `GPS現在地 (緯度:${lat.toFixed(2)} / 経度:${lon.toFixed(2)})`;
+            fetchPrediction(lat, lon);
+          },
+          (error) => {
+            console.warn(
+              "GPSでの位置情報特定に失敗したため、IP推定に切り替えます:",
+              error,
+            );
+            fallbackToIPGeolocation(error);
+          },
+          geoOptions,
+        );
+      }
+
+      async function fetchJsonWithTimeout(url, timeoutMs = 3500) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(
+          () => controller.abort(),
+          timeoutMs,
+        );
+
+        try {
+          const response = await fetch(url, {
+            signal: controller.signal,
+            cache: "no-store",
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.json();
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      }
+
+      async function fallbackToIPGeolocation(reason) {
+        const loadingText = document.getElementById("loading-text");
+        if (loadingText)
+          loadingText.innerText = "GPSが使えないため、IPから現在地を推定中...";
+
+        const endpoints = [
+          {
+            name: "freeipapi",
+            url: "https://free.freeipapi.com/api/json",
+            extract: (data) => ({
+              lat: data?.latitude,
+              lon: data?.longitude,
+              label: [data?.country_name, data?.region, data?.city]
+                .filter(Boolean)
+                .join(" / "),
+            }),
+          },
+          {
+            name: "ipapi",
+            url: "https://ipapi.co/json/",
+            extract: (data) => ({
+              lat: data?.latitude,
+              lon: data?.longitude,
+              label: [data?.country_name, data?.region, data?.city]
+                .filter(Boolean)
+                .join(" / "),
+            }),
+          },
+        ];
+
+        let lastError =
+          reason instanceof Error
+            ? reason
+            : new Error(String(reason || "IP fallback requested"));
+
+        for (const endpoint of endpoints) {
+          try {
+            const data = await fetchJsonWithTimeout(endpoint.url, 3500);
+            const location = endpoint.extract(data);
+
+            if (
+              typeof location.lat === "number" &&
+              typeof location.lon === "number"
+            ) {
+              document.getElementById("location-name").innerText =
+                location.label
+                  ? `${location.label} (IP推定)`
+                  : "IP推定の現在地";
+              if (loadingText) {
+                loadingText.innerText =
+                  endpoint.name === "freeipapi"
+                    ? "freeipapi.com で位置を推定しました"
+                    : "ipapi.co で位置を推定しました";
+              }
+              await fetchPrediction(location.lat, location.lon);
+              return true;
+            }
+
+            lastError = new Error(
+              `${endpoint.name} returned invalid coordinates`,
+            );
+          } catch (error) {
+            lastError = error;
+            console.warn(`${endpoint.name} geolocation failed`, error);
+          }
+        }
+
+        console.error(
+          "すべての位置特定APIが失敗しました。デモ地点を表示します。",
+          lastError,
+        );
+        tryDemoData();
+        return false;
+      }
+
+      function tryDemoData() {
+        const errorCard = document.getElementById("error-card");
+        if (errorCard) errorCard.classList.add("hidden");
+        document.getElementById("location-name").innerText =
+          "東京都 新宿区 (デモデータ)";
+        fetchPrediction(35.69, 139.69);
+      }
+
+      function showError(msg) {
+        const loader = document.getElementById("loading-state");
+        if (loader) loader.classList.add("hidden");
+        const errorCard = document.getElementById("error-card");
+        if (errorCard) {
+          errorCard.classList.remove("hidden");
+          document.getElementById("error-message").innerText = msg;
+        }
+      }
+
+      async function fetchPrediction(lat, lon) {
+        const loader = document.getElementById("loading-state");
+        if (loader) {
+          loader.classList.remove("hidden");
+          document.getElementById("loading-text").innerText =
+            "最新の気象予測データを解析中...";
+        }
+
+        let responseData = null;
+        let retryDelay = 1000;
+
+        for (let i = 0; i < 5; i++) {
+          try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,shortwave_radiation,wind_speed_10m,relative_humidity_2m&hourly=temperature_2m,shortwave_radiation,wind_speed_10m&timezone=Asia%2FTokyo&forecast_days=3`;
+            const res = await fetch(url);
+            if (res.ok) {
+              responseData = await res.json();
+              break;
+            }
+          } catch (e) {}
+          await new Promise((r) => setTimeout(r, retryDelay));
+          retryDelay *= 2;
+        }
+
+        if (loader) loader.classList.add("hidden");
+
+        if (!responseData) {
+          showError(
+            "気象予測データのロードに失敗しました。接続状態をご確認ください。",
+          );
+          return;
+        }
+
+        const iconBox = document.getElementById("location-icon-box");
+        if (iconBox)
+          iconBox.className = "p-2.5 bg-emerald-50 text-emerald-600 rounded-xl";
+
+        weatherForecastData = responseData;
+        renderAllForecasts();
+      }
+
+      function renderAllForecasts() {
+        if (!weatherForecastData) return;
+
+        // --- 1. 現在の実況判定 ---
+        const current = weatherForecastData.current;
+        const currentSurface = calculateAdvancedSurfaceTemperature(
+          current.temperature_2m,
+          current.shortwave_radiation,
+          current.wind_speed_10m,
+        );
+        const meta = getStatusMetadata(currentSurface);
+
+        const resultCard = document.getElementById("result-card");
+        if (resultCard) {
+          // 注意（黄色系）の時だけ、文字色が白だと見づらいため、黒寄りの文字色に切り替える
+          const textContrastClass =
+            currentSurface > 25 && currentSurface <= 35
+              ? "text-slate-900"
+              : "text-white";
+          const subTextContrastClass =
+            currentSurface > 25 && currentSurface <= 35
+              ? "text-slate-750 font-semibold"
+              : "text-white/90 font-medium";
+          const iconBgContrastClass =
+            currentSurface > 25 && currentSurface <= 35
+              ? "bg-black/10 text-slate-900"
+              : "bg-white/15 text-white";
+          const iconContrastClass =
+            currentSurface > 25 && currentSurface <= 35
+              ? "text-slate-900"
+              : "text-orange-500";
+
+          resultCard.className = `bg-gradient-to-br ${meta.colorClass} border ${meta.borderClass} rounded-[2.5rem] p-6 ${textContrastClass} relative overflow-hidden shadow-lg transition-custom`;
+
+          resultCard.innerHTML = `
+                    <div class="absolute -right-12 -bottom-12 text-black/5 select-none pointer-events-none transform rotate-12">
+                        <i data-lucide="paw-print" class="w-56 h-56"></i>
+                    </div>
+
+                    <div class="relative z-10 space-y-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black tracking-wider bg-black/10 px-3 py-1.5 rounded-full uppercase">現在のお散歩コンディション</span>
+                            <div class="flex items-center space-x-1.5 text-xs font-bold bg-black/10 px-2.5 py-1 rounded-lg">
+                                <i data-lucide="wind" class="w-3.5 h-3.5"></i>
+                                <span>風速: ${current.wind_speed_10m.toFixed(1)} m/s</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="text-center md:text-left space-y-2">
+                                <h2 class="text-2xl md:text-4xl font-black tracking-tight">${meta.label}</h2>
+                                <p class="text-xs ${subTextContrastClass} max-w-md leading-relaxed">${meta.advice}</p>
+                            </div>
+
+                            <!-- 推定路面温度ディスプレイ -->
+                            <div class="${iconBgContrastClass} backdrop-blur-md rounded-3xl p-4 flex items-center space-x-4 shrink-0 min-w-[210px] justify-center border border-white/10 shadow-inner">
+                                <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                    <i data-lucide="${meta.icon}" class="w-6 h-6 ${iconContrastClass}"></i>
+                                </div>
+                                <div class="text-left">
+                                    <span class="text-[10px] font-bold block opacity-80">推定アスファルト温度</span>
+                                    <div class="text-3xl font-black tracking-tight">${currentSurface.toFixed(1)} <span class="text-lg font-normal">℃</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
+                            <div class="bg-black/5 p-2 rounded-xl">
+                                <span class="text-[10px] block opacity-60">周辺気温</span>
+                                <span class="font-bold text-sm">${current.temperature_2m.toFixed(1)} ℃</span>
+                            </div>
+                            <div class="bg-black/5 p-2 rounded-xl">
+                                <span class="text-[10px] block opacity-60">日射エネルギー</span>
+                                <span class="font-bold text-sm">${current.shortwave_radiation.toFixed(0)} W/m²</span>
+                            </div>
+                            <div class="bg-black/5 p-2 rounded-xl">
+                                <span class="text-[10px] block opacity-60">現在の湿度</span>
+                                <span class="font-bold text-sm">${current.relative_humidity_2m}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // --- 2. 3日間お散歩タイムラインの更新 ---
+        const timelineSection = document.getElementById("timeline-section");
+        if (timelineSection) timelineSection.classList.remove("hidden");
+
+        initGraphSizing();
+        renderActiveDayTimelineAndGraph(true);
+      }
+
+      function initGraphSizing() {
+        if (!outerContainer || !canvas) initDOMElements();
+        if (!outerContainer || !canvas) return;
+
+        viewportWidth = outerContainer.clientWidth;
+        maxScrollWidth = 24 * hourStepWidth;
+
+        // 高DPI(Retina)ディスプレイ対応: Canvasのにじみを除去するスケーリング
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = maxScrollWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+
+        // CSSによる見た目の寸法は固定
+        canvas.style.width = `${maxScrollWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+
+        // Canvas描画コンテキストをdpr倍して描画
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+
+        scrollArea.style.width = `${maxScrollWidth}px`;
+      }
+
+      function changeActiveDay(dayOffset) {
+        selectedDayOffset = dayOffset;
+
+        const daysText = ["本日", "明日", "明後日"];
+        const indicator = document.getElementById("graph-date-indicator");
+        if (indicator) indicator.innerText = daysText[dayOffset];
+
+        for (let i = 0; i < 3; i++) {
+          const tab = document.getElementById(`day-tab-${i}`);
+          if (tab) {
+            if (i === dayOffset) {
+              tab.className =
+                "day-tab px-4 py-2 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
+            } else {
+              tab.className =
+                "day-tab px-4 py-2 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
+            }
+          }
+        }
+
+        renderActiveDayTimelineAndGraph(dayOffset === 0);
+      }
+
+      function scrollToX(targetX) {
+        if (!scrollArea) return;
+        const minScroll = -(maxScrollWidth - viewportWidth);
+        const clampedX = Math.max(minScroll, Math.min(0, targetX));
+        scrollLeftOffset = clampedX;
+        scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
+      }
+
+      function renderActiveDayTimelineAndGraph(scrollToCurrentTime = false) {
+        if (!weatherForecastData) return;
+
+        const hourly = weatherForecastData.hourly;
+        const startIndex = selectedDayOffset * 24;
+        const endIndex = startIndex + 24;
+
+        const dayDataPoints = [];
+        let currentHourIndex = 0;
+        const now = new Date();
+        const currentHourVal = now.getHours();
+
+        for (let idx = startIndex; idx < endIndex; idx++) {
+          if (idx >= hourly.time.length) break;
+
+          const timeStr = hourly.time[idx];
+          const dateObj = new Date(timeStr);
+          const hour = dateObj.getHours();
+          const temp = hourly.temperature_2m[idx];
+          const rad = hourly.shortwave_radiation[idx];
+          const wind = hourly.wind_speed_10m[idx];
+
+          const calculatedTs = calculateAdvancedSurfaceTemperature(
+            temp,
+            rad,
+            wind,
+          );
+
+          dayDataPoints.push({
+            hour: hour,
+            temp: temp,
+            rad: rad,
+            wind: wind,
+            surfaceTemp: calculatedTs,
+            meta: getStatusMetadata(calculatedTs),
+          });
+
+          if (selectedDayOffset === 0 && hour === currentHourVal) {
+            currentHourIndex = idx - startIndex;
+          }
+        }
+
+        // --- A. HTML タイムリスト表示の構築 ---
+        const container = document.getElementById("timeline-cards-container");
+        if (container) {
+          container.innerHTML = "";
+
+          dayDataPoints.forEach((dp, i) => {
+            const isCurrent =
+              selectedDayOffset === 0 && dp.hour === currentHourVal;
+            const itemRow = document.createElement("div");
+            itemRow.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-custom ${
+              isCurrent
+                ? "bg-orange-50/50 border-orange-200 shadow-sm"
+                : "bg-slate-50 border-slate-100 hover:bg-slate-100/40"
+            }`;
+
+            itemRow.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 text-center shrink-0">
+                                <span class="text-[9px] font-bold text-slate-400 block">時間</span>
+                                <span class="text-xs font-black text-slate-700">${dp.hour}:00</span>
+                            </div>
+                            <div class="w-2.5 h-10 rounded-full ${dp.meta.indicator}"></div>
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-slate-800">${dp.meta.label}</span>
+                                    ${isCurrent ? '<span class="text-[9px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded animate-pulse">現在</span>' : ""}
+                                </div>
+                                <p class="text-[9px] text-slate-400">気温 ${dp.temp.toFixed(1)}℃ / 風速 ${dp.wind.toFixed(1)}m/s / 日射 ${dp.rad.toFixed(0)}W</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-right shrink-0">
+                            <span class="text-[9px] font-bold text-slate-400 block">路面予測</span>
+                            <span class="text-xs font-black ${dp.meta.textClass}">${dp.surfaceTemp.toFixed(1)}℃</span>
+                        </div>
+                    `;
+            container.appendChild(itemRow);
+          });
+        }
+
+        // --- B. Canvas折れ線グラフのレンダリング ---
+        drawCanvasGraph(dayDataPoints, currentHourVal);
+
+        // --- C. スクロール位置制御 ---
+        if (scrollToCurrentTime) {
+          const targetPixel =
+            currentHourIndex * hourStepWidth -
+            viewportWidth / 2 +
+            hourStepWidth / 2;
+          scrollToX(-targetPixel);
+        } else {
+          scrollToX(0);
+        }
+
+        lucide.createIcons();
+      }
+
+      // HTML5 Canvasによるリッチなお散歩お天気予測グラフの描画
+      function drawCanvasGraph(dataPoints, currentHourVal) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, maxScrollWidth, canvasHeight);
+
+        const paddingLeft = 30;
+        const graphHeight = 150;
+        const startY = 40; // 上部マージン
+
+        const minTemp = -5;
+        const maxTemp = 60;
+        const tempRange = maxTemp - minTemp;
+
+        const getCanvasY = (temp) => {
+          const ratio = (temp - minTemp) / tempRange;
+          return startY + graphHeight - ratio * graphHeight;
+        };
+
+        // 1. 各温度カテゴリの背景バンドを鮮やかに描画
+        const bandColors = [
+          "rgba(16, 185, 129, 0.05)", // 安全: 緑
+          "rgba(250, 204, 21, 0.08)", // 注意: 鮮やかな黄
+          "rgba(249, 115, 22, 0.05)", // 危険: 橙
+          "rgba(225, 29, 72, 0.05)", // 絶対NG: 深紅
+        ];
+
+        // 安全帯
+        ctx.fillStyle = bandColors[0];
+        ctx.fillRect(
+          0,
+          getCanvasY(25),
+          maxScrollWidth,
+          getCanvasY(minTemp) - getCanvasY(25),
+        );
+        // 注意帯
+        ctx.fillStyle = bandColors[1];
+        ctx.fillRect(
+          0,
+          getCanvasY(35),
+          maxScrollWidth,
+          getCanvasY(25) - getCanvasY(35),
+        );
+        // 危険帯
+        ctx.fillStyle = bandColors[2];
+        ctx.fillRect(
+          0,
+          getCanvasY(45),
+          maxScrollWidth,
+          getCanvasY(35) - getCanvasY(45),
+        );
+        // 絶対NG帯
+        ctx.fillStyle = bandColors[3];
+        ctx.fillRect(0, 0, maxScrollWidth, getCanvasY(45));
+
+        // 水平の境界線を描画
+        ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
+        ctx.lineWidth = 1;
+        [0, 10, 20, 30, 40, 50, 60].forEach((t) => {
+          const y = getCanvasY(t);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(maxScrollWidth, y);
+          ctx.stroke();
+
+          // Y軸目盛り数値
+          ctx.fillStyle = "rgba(100, 116, 139, 0.7)";
+          ctx.font = "bold 9px sans-serif";
+          ctx.fillText(`${t}℃`, 8, y - 4);
+        });
+
+        // 2. グリッド(縦線)と時間のテキスト描画
+        dataPoints.forEach((dp, i) => {
+          const x = paddingLeft + i * hourStepWidth;
+
+          ctx.strokeStyle = "rgba(241, 245, 249, 0.9)";
+          ctx.beginPath();
+          ctx.moveTo(x, startY);
+          ctx.lineTo(x, startY + graphHeight);
+          ctx.stroke();
+
+          ctx.fillStyle = "rgba(100, 116, 139, 1)";
+          ctx.font = "bold 10px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${dp.hour}:00`, x, startY + graphHeight + 18);
+
+          if (selectedDayOffset === 0 && dp.hour === currentHourVal) {
+            ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
+            ctx.fillRect(x - hourStepWidth / 2, 0, hourStepWidth, canvasHeight);
+
+            ctx.strokeStyle = "rgba(249, 115, 22, 0.4)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, startY + graphHeight + 30);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = "rgba(249, 115, 22, 1)";
+            ctx.font = "bold 8px sans-serif";
+            ctx.fillText("現在", x, startY - 22);
+          }
+        });
+
+        // 3. 折れ線の描画
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(71, 85, 105, 0.85)";
+
+        dataPoints.forEach((dp, i) => {
+          const x = paddingLeft + i * hourStepWidth;
+          const y = getCanvasY(dp.surfaceTemp);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+
+        // 4. 各ノード（ポイント）に丸と温度情報を描画
+        dataPoints.forEach((dp, i) => {
+          const x = paddingLeft + i * hourStepWidth;
+          const y = getCanvasY(dp.surfaceTemp);
+
+          ctx.fillStyle = dp.meta.chartColor;
+          ctx.beginPath();
+          ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "rgba(15, 23, 42, 1)";
+          ctx.font = "bold 10px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${dp.surfaceTemp.toFixed(1)}°`, x, y - 10);
+        });
+      }
+
+      // --- ドラッグ ＆ スワイプ操作用インタラクション設計 ---
+      let startClientX = 0;
+      let isMoving = false;
+
+      function handleDragStart(clientX) {
+        if (!scrollArea) return;
+        isDragging = true;
+        startClientX = clientX;
+        startX = scrollLeftOffset;
+        scrollArea.style.transition = "none";
+      }
+
+      // ラバーバンド効果付きドラッグ
+      function handleDragMove(clientX) {
+        if (!isDragging || !scrollArea) return;
+        const deltaX = clientX - startClientX;
+        let targetX = startX + deltaX;
+
+        const minScroll = -(maxScrollWidth - viewportWidth);
+        if (targetX > 0) {
+          targetX = targetX * 0.3;
+        } else if (targetX < minScroll) {
+          targetX = minScroll + (targetX - minScroll) * 0.3;
+        }
+
+        scrollLeftOffset = targetX;
+        scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
+        isMoving = true;
+      }
+
+      // 滑らかなスナップ補正
+      function handleDragEnd() {
+        if (!isDragging || !scrollArea) return;
+        isDragging = false;
+
+        scrollArea.style.transition =
+          "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)";
+
+        const minScroll = -(maxScrollWidth - viewportWidth);
+        if (scrollLeftOffset > 0) {
+          scrollLeftOffset = 0;
+        } else if (scrollLeftOffset < minScroll) {
+          scrollLeftOffset = minScroll;
+        }
+
+        const itemSnappedIndex = Math.round(
+          Math.abs(scrollLeftOffset) / hourStepWidth,
+        );
+        scrollLeftOffset = -(itemSnappedIndex * hourStepWidth);
+
+        if (scrollLeftOffset > 0) scrollLeftOffset = 0;
+        if (scrollLeftOffset < minScroll) scrollLeftOffset = minScroll;
+
+        scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
+      }
+
+      // 画面幅変化時の自動リサイズ
+      window.addEventListener("resize", () => {
+        if (weatherForecastData) {
+          initGraphSizing();
+          renderActiveDayTimelineAndGraph(false);
+        }
+      });
+
+      // DOM構築完了後に安全に起動
+      document.addEventListener("DOMContentLoaded", () => {
+        initDOMElements();
+        setupEventListeners();
+        lucide.createIcons();
+
+        // 起動時に白紙画面を防ぐため、自動で東京の天気予測をロード（親切なUX設計）
+        tryDemoData();
+      });
+    </script>
+  </body>
+</html>
