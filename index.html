@@ -835,15 +835,18 @@
           }
         }
 
-        const timelineDisplayPoints =
-          isCurrentDayView && currentHourIndex > 0
-            ? dayDataPoints
-                .slice(currentHourIndex)
-                .concat(dayDataPoints.slice(0, currentHourIndex))
-            : dayDataPoints;
+        const timelineDisplayPoints = dayDataPoints.map((dp) => ({
+          ...dp,
+          isCurrent: isCurrentDayView && dp.hour === currentHourVal,
+          isPast: isCurrentDayView && dp.hour < currentHourVal,
+        }));
 
         const container = document.getElementById("timeline-cards-container");
         renderTimelineCards(container, timelineDisplayPoints, isCurrentDayView);
+        if (isCurrentDayView && container && currentHourIndex > 0) {
+          const currentCard = container.children[currentHourIndex];
+          currentCard?.scrollIntoView({ block: "start" });
+        }
         drawCanvasGraph({
           ctx,
           dataPoints: dayDataPoints,
