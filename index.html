@@ -29,15 +29,15 @@
       .graph-outer-container {
         position: relative;
         width: 100%;
-        height: 240px;
+        height: auto;
         overflow: hidden;
         touch-action: pan-y; /* スワイプ時の垂直スクロールはブラウザに任せ、水平ドラッグのみキャッチ */
       }
       .graph-scroll-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
+        position: relative;
+        width: fit-content;
+        display: flex;
+        flex-direction: column;
         cursor: grab;
       }
       .graph-scroll-area:active {
@@ -231,26 +231,14 @@
             <!-- インタラクティブなスワイプ折れ線グラフ -->
             <div id="graph-scroll-area" class="graph-scroll-area">
               <canvas id="line-graph-canvas"></canvas>
+              <div id="graph-hourly-details" class="pt-0.5 pb-0"></div>
             </div>
-          </div>
-        </div>
-
-        <!-- 時間帯カードコンテナ -->
-        <div class="space-y-1 text-xs">
-          <div class="text-slate-400 font-bold px-1 pb-1">
-            24時間の詳細タイムテーブル
-          </div>
-          <div
-            class="space-y-2 max-h-[280px] overflow-y-auto pr-1"
-            id="timeline-cards-container"
-          >
-            <!-- JSで動的に構築されます -->
           </div>
         </div>
 
         <!-- カラーマーカー説明 -->
         <div
-          class="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[10px] font-bold pt-3 border-t border-slate-100 text-slate-500"
+          class="flex flex-wrap gap-x-4 gap-y-1.5 justify-center text-[10px] font-bold pt-0.5 border-t border-slate-100 text-slate-500"
         >
           <span class="flex items-center"
             ><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span
@@ -460,7 +448,7 @@
       } from "./src/services/geolocation.js";
       import { fetchWeatherForecast } from "./src/services/weather.js";
       import { renderResultCard } from "./src/render/result-card.js";
-      import { renderTimelineCards } from "./src/render/timeline.js";
+      import { renderHourlyGraphDetails } from "./src/render/timeline.js";
       import { drawCanvasGraph } from "./src/canvas/graph.js";
 
       // グローバルデータ保持
@@ -726,7 +714,7 @@
         if (!outerContainer || !canvas) return;
 
         viewportWidth = outerContainer.clientWidth;
-        maxScrollWidth = 24 * hourStepWidth;
+        maxScrollWidth = graphPaddingLeft + 24 * hourStepWidth;
 
         // 高DPI(Retina)ディスプレイ対応: Canvasのにじみを除去するスケーリング
         const dpr = window.devicePixelRatio || 1;
@@ -741,7 +729,7 @@
         ctx.resetTransform();
         ctx.scale(dpr, dpr);
 
-        scrollArea.style.width = `${maxScrollWidth + viewportWidth}px`;
+        scrollArea.style.width = `${maxScrollWidth}px`;
       }
 
       function getMinScroll() {
@@ -841,12 +829,14 @@
           isPast: isCurrentDayView && dp.hour < currentHourVal,
         }));
 
-        const container = document.getElementById("timeline-cards-container");
-        renderTimelineCards(container, timelineDisplayPoints, isCurrentDayView);
-        if (isCurrentDayView && container && currentHourIndex > 0) {
-          const currentCard = container.children[currentHourIndex];
-          currentCard?.scrollIntoView({ block: "start" });
-        }
+        const graphDetailsContainer = document.getElementById(
+          "graph-hourly-details",
+        );
+        renderHourlyGraphDetails(
+          graphDetailsContainer,
+          timelineDisplayPoints,
+          isCurrentDayView,
+        );
         drawCanvasGraph({
           ctx,
           dataPoints: dayDataPoints,

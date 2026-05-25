@@ -51,3 +51,46 @@ export function renderTimelineCards(
     container.appendChild(itemRow);
   });
 }
+
+export function renderHourlyGraphDetails(
+  container,
+  timelineDisplayPoints,
+  isCurrentDayView,
+) {
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const getSafetyLabel = (surfaceTemp) => {
+    if (surfaceTemp <= 25) return "安全";
+    if (surfaceTemp <= 35) return "注意";
+    if (surfaceTemp <= 45) return "危険";
+    return "絶対NG";
+  };
+
+  const strip = document.createElement("div");
+  strip.className = "flex items-stretch pr-[35px]";
+  strip.style.width = `${timelineDisplayPoints.length * 70 + 35}px`;
+  strip.style.marginLeft = "-5px";
+
+  timelineDisplayPoints.forEach((dp) => {
+    const card = document.createElement("div");
+    card.className = "w-[70px] shrink-0 px-2 py-2";
+    card.innerHTML = `
+      <div class="space-y-1 text-center">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full ${dp.meta.indicator} shrink-0"></span>
+          <span class="text-[9px] font-bold leading-tight text-slate-700">${getSafetyLabel(dp.surfaceTemp)}</span>
+        </div>
+        <p class="text-[8px] leading-tight text-slate-500">
+          気温 ${dp.temp.toFixed(1)}℃<br />
+          風速 ${dp.wind.toFixed(1)}m/s<br />
+          日射 ${dp.rad.toFixed(0)}W
+        </p>
+      </div>
+    `;
+    strip.appendChild(card);
+  });
+
+  container.appendChild(strip);
+}
