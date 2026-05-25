@@ -160,7 +160,7 @@
           </div>
           <div class="space-y-1">
             <h2 class="text-lg font-bold text-slate-800">
-              アスファルト路面の状態を解析します
+              アスファルト路面の状態を解析中...
             </h2>
             <p class="text-xs text-slate-400 max-w-sm">
               上のボタンをタップして位置情報を送信すると、現在のアスファルト予測温度および3日間（今日・明日・明後日）の適正予報グラフを表示します。
@@ -375,7 +375,7 @@
               </li>
             </ul>
             <p class="text-[10px] text-slate-400">
-              【獣医学的出典・参考文献】<br />
+              【参考文献】<br />
               1. 全米獣医師会（AVMA）夏の安全ガイドライン：『The 5-Second
               Rule（手の甲をアスファルトに5秒間押し当てて熱いと感じたら、犬にとって歩行不可）』に基づく物理的境界判定の補正。<br />
               2. 獣医救急医療学会（VECCS）熱中症および環境性熱障害に関する知見。
@@ -410,10 +410,7 @@
               本サービスが提供する路面予測温度は、Open-Meteoが提供する広域気象データに基づく理論計算値です。
             </p>
             <p>
-              2. アスファルトの実際の温度は、<strong
-                >周囲 of
-                建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong
-              >などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
+              2. アスファルトの実際の温度は、<strong>周囲の建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong>などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
             </p>
             <p class="font-bold text-slate-700">
               3.
@@ -459,10 +456,12 @@
       let scrollLeftOffset = 0; // 現在のスクロール量
       let maxScrollWidth = 1200; // 24時間の幅合計
       let viewportWidth = 0;
+      let daySyncTimer = null;
 
       // グラフエリア（Canvasサイズ設定）
       const canvasHeight = 240;
       const hourStepWidth = 70; // 1時間あたりの幅px
+      const graphPaddingLeft = 30;
 
       // --- DOM要素とイベントリスナーの安全な初期化処理 ---
       function initDOMElements() {
@@ -472,6 +471,101 @@
         }
         scrollArea = document.getElementById("graph-scroll-area");
         outerContainer = document.querySelector(".graph-outer-container");
+      }
+
+      function getJstDateParts(date = new Date()) {
+        const formatter = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+        const parts = formatter.formatToParts(date);
+        return {
+          year: Number(parts.find((part) => part.type === "year")?.value),
+          month: Number(parts.find((part) => part.type === "month")?.value),
+          day: Number(parts.find((part) => part.type === "day")?.value),
+        };
+      }
+
+      function getJstDateKey(date = new Date()) {
+        const { year, month, day } = getJstDateParts(date);
+        return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+
+      function getJstHour(date = new Date()) {
+        const formatter = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Tokyo",
+          hour: "2-digit",
+          hour12: false,
+        });
+        return Number(formatter.format(date));
+      }
+
+      function getForecastBaseDateKey() {
+        return weatherForecastData?.hourly?.time?.[0]?.slice(0, 10) || "";
+      }
+
+      function getCurrentForecastDayOffset() {
+        const baseDateKey = getForecastBaseDateKey();
+        if (!baseDateKey) return 0;
+
+        const { year, month, day } = getJstDateParts(new Date());
+        const currentDate = new Date(Date.UTC(year, month - 1, day));
+        const [baseYear, baseMonth, baseDay] = baseDateKey.split("-").map(Number);
+        const baseDate = new Date(Date.UTC(baseYear, baseMonth - 1, baseDay));
+
+        return Math.max(
+          0,
+          Math.round((currentDate.getTime() - baseDate.getTime()) / 86400000),
+        );
+      }
+
+      function buildRollingWindow(hourly, startIndex) {
+        const points = [];
+
+        for (let offset = 0; offset < 24; offset++) {
+          const idx = startIndex + offset;
+          if (idx >= hourly.time.length) break;
+
+          const timeStr = hourly.time[idx];
+          const dateObj = new Date(timeStr);
+          const temp = hourly.temperature_2m[idx];
+          const rad = hourly.shortwave_radiation[idx];
+          const wind = hourly.wind_speed_10m[idx];
+          const calculatedTs = calculateAdvancedSurfaceTemperature(
+            temp,
+            rad,
+            wind,
+          );
+
+          points.push({
+            timeStr,
+            dateKey: timeStr.slice(0, 10),
+            hour: dateObj.getHours(),
+            temp,
+            rad,
+            wind,
+            surfaceTemp: calculatedTs,
+            meta: getStatusMetadata(calculatedTs),
+          });
+        }
+
+        return points;
+      }
+
+      function startDaySyncTimer() {
+        if (daySyncTimer) return;
+
+        daySyncTimer = window.setInterval(() => {
+          if (!weatherForecastData) return;
+
+          const currentOffset = getCurrentForecastDayOffset();
+          if (selectedDayOffset <= currentOffset) {
+            selectedDayOffset = currentOffset;
+            renderActiveDayTimelineAndGraph();
+          }
+        }, 10000);
       }
 
       function setupEventListeners() {
@@ -968,51 +1062,67 @@
         ctx.resetTransform();
         ctx.scale(dpr, dpr);
 
-        scrollArea.style.width = `${maxScrollWidth}px`;
+        scrollArea.style.width = `${maxScrollWidth + viewportWidth}px`;
+      }
+
+      function getMinScroll() {
+        if (!scrollArea) {
+          return -(maxScrollWidth - viewportWidth);
+        }
+
+        return -(scrollArea.offsetWidth - viewportWidth);
+      }
+
+      function updateDayTabUI() {
+        const daysText = ["本日", "明日", "明後日"];
+        const indicator = document.getElementById("graph-date-indicator");
+        if (indicator) indicator.innerText = daysText[selectedDayOffset] || "本日";
+
+        for (let i = 0; i < 3; i++) {
+          const tab = document.getElementById(`day-tab-${i}`);
+          if (!tab) continue;
+
+          if (i === selectedDayOffset) {
+            tab.className =
+              "day-tab px-4 py-2 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
+          } else {
+            tab.className =
+              "day-tab px-4 py-2 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
+          }
+        }
       }
 
       function changeActiveDay(dayOffset) {
         selectedDayOffset = dayOffset;
-
-        const daysText = ["本日", "明日", "明後日"];
-        const indicator = document.getElementById("graph-date-indicator");
-        if (indicator) indicator.innerText = daysText[dayOffset];
-
-        for (let i = 0; i < 3; i++) {
-          const tab = document.getElementById(`day-tab-${i}`);
-          if (tab) {
-            if (i === dayOffset) {
-              tab.className =
-                "day-tab px-4 py-2 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
-            } else {
-              tab.className =
-                "day-tab px-4 py-2 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
-            }
-          }
-        }
-
-        renderActiveDayTimelineAndGraph(dayOffset === 0);
+        updateDayTabUI();
+        renderActiveDayTimelineAndGraph();
       }
 
       function scrollToX(targetX) {
         if (!scrollArea) return;
-        const minScroll = -(maxScrollWidth - viewportWidth);
+        const minScroll = getMinScroll();
         const clampedX = Math.max(minScroll, Math.min(0, targetX));
         scrollLeftOffset = clampedX;
         scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
       }
 
-      function renderActiveDayTimelineAndGraph(scrollToCurrentTime = false) {
+      function renderActiveDayTimelineAndGraph() {
         if (!weatherForecastData) return;
 
         const hourly = weatherForecastData.hourly;
+        const currentDayOffset = getCurrentForecastDayOffset();
+        if (selectedDayOffset <= currentDayOffset) {
+          selectedDayOffset = currentDayOffset;
+        }
+        updateDayTabUI();
+        const now = new Date();
+        const currentHourVal = getJstHour(now);
+        const isCurrentDayView = selectedDayOffset === currentDayOffset;
         const startIndex = selectedDayOffset * 24;
         const endIndex = startIndex + 24;
 
         const dayDataPoints = [];
         let currentHourIndex = 0;
-        const now = new Date();
-        const currentHourVal = now.getHours();
 
         for (let idx = startIndex; idx < endIndex; idx++) {
           if (idx >= hourly.time.length) break;
@@ -1023,7 +1133,6 @@
           const temp = hourly.temperature_2m[idx];
           const rad = hourly.shortwave_radiation[idx];
           const wind = hourly.wind_speed_10m[idx];
-
           const calculatedTs = calculateAdvancedSurfaceTemperature(
             temp,
             rad,
@@ -1031,27 +1140,35 @@
           );
 
           dayDataPoints.push({
-            hour: hour,
-            temp: temp,
-            rad: rad,
-            wind: wind,
+            timeStr,
+            dateKey: timeStr.slice(0, 10),
+            hour,
+            temp,
+            rad,
+            wind,
             surfaceTemp: calculatedTs,
             meta: getStatusMetadata(calculatedTs),
           });
 
-          if (selectedDayOffset === 0 && hour === currentHourVal) {
+          if (isCurrentDayView && hour === currentHourVal) {
             currentHourIndex = idx - startIndex;
           }
         }
+
+        const timelineDisplayPoints =
+          isCurrentDayView && currentHourIndex > 0
+            ? dayDataPoints
+                .slice(currentHourIndex)
+                .concat(dayDataPoints.slice(0, currentHourIndex))
+            : dayDataPoints;
 
         // --- A. HTML タイムリスト表示の構築 ---
         const container = document.getElementById("timeline-cards-container");
         if (container) {
           container.innerHTML = "";
 
-          dayDataPoints.forEach((dp, i) => {
-            const isCurrent =
-              selectedDayOffset === 0 && dp.hour === currentHourVal;
+          timelineDisplayPoints.forEach((dp, i) => {
+            const isCurrent = isCurrentDayView && i === 0;
             const itemRow = document.createElement("div");
             itemRow.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-custom ${
               isCurrent
@@ -1064,6 +1181,7 @@
                             <div class="w-10 text-center shrink-0">
                                 <span class="text-[9px] font-bold text-slate-400 block">時間</span>
                                 <span class="text-xs font-black text-slate-700">${dp.hour}:00</span>
+                                <span class="text-[9px] font-bold text-slate-400 block">${dp.dateKey.slice(5).replace("-", "/")}</span>
                             </div>
                             <div class="w-2.5 h-10 rounded-full ${dp.meta.indicator}"></div>
                             <div>
@@ -1085,14 +1203,16 @@
         }
 
         // --- B. Canvas折れ線グラフのレンダリング ---
-        drawCanvasGraph(dayDataPoints, currentHourVal);
+        drawCanvasGraph(dayDataPoints, currentHourVal, isCurrentDayView);
 
         // --- C. スクロール位置制御 ---
-        if (scrollToCurrentTime) {
-          const targetPixel =
-            currentHourIndex * hourStepWidth -
-            viewportWidth / 2 +
-            hourStepWidth / 2;
+        const isCompactViewport = window.matchMedia("(max-width: 640px)").matches;
+        if (isCurrentDayView) {
+          const targetPixel = isCompactViewport
+            ? currentHourIndex * hourStepWidth - graphPaddingLeft
+            : currentHourIndex * hourStepWidth -
+              viewportWidth / 2 +
+              graphPaddingLeft;
           scrollToX(-targetPixel);
         } else {
           scrollToX(0);
@@ -1102,11 +1222,11 @@
       }
 
       // HTML5 Canvasによるリッチなお散歩お天気予測グラフの描画
-      function drawCanvasGraph(dataPoints, currentHourVal) {
+      function drawCanvasGraph(dataPoints, currentHourVal, highlightCurrent = false) {
         if (!ctx) return;
         ctx.clearRect(0, 0, maxScrollWidth, canvasHeight);
 
-        const paddingLeft = 30;
+        const paddingLeft = graphPaddingLeft;
         const graphHeight = 150;
         const startY = 40; // 上部マージン
 
@@ -1186,7 +1306,7 @@
           ctx.textAlign = "center";
           ctx.fillText(`${dp.hour}:00`, x, startY + graphHeight + 18);
 
-          if (selectedDayOffset === 0 && dp.hour === currentHourVal) {
+          if (highlightCurrent && dp.hour === currentHourVal) {
             ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
             ctx.fillRect(x - hourStepWidth / 2, 0, hourStepWidth, canvasHeight);
 
@@ -1261,7 +1381,7 @@
         const deltaX = clientX - startClientX;
         let targetX = startX + deltaX;
 
-        const minScroll = -(maxScrollWidth - viewportWidth);
+        const minScroll = getMinScroll();
         if (targetX > 0) {
           targetX = targetX * 0.3;
         } else if (targetX < minScroll) {
@@ -1281,7 +1401,7 @@
         scrollArea.style.transition =
           "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)";
 
-        const minScroll = -(maxScrollWidth - viewportWidth);
+        const minScroll = getMinScroll();
         if (scrollLeftOffset > 0) {
           scrollLeftOffset = 0;
         } else if (scrollLeftOffset < minScroll) {
@@ -1303,7 +1423,7 @@
       window.addEventListener("resize", () => {
         if (weatherForecastData) {
           initGraphSizing();
-          renderActiveDayTimelineAndGraph(false);
+          renderActiveDayTimelineAndGraph();
         }
       });
 
@@ -1312,6 +1432,7 @@
         initDOMElements();
         setupEventListeners();
         lucide.createIcons();
+        startDaySyncTimer();
 
         // 起動時に白紙画面を防ぐため、自動で東京の天気予測をロード（親切なUX設計）
         tryDemoData();
