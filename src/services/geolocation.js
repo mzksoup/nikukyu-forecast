@@ -4,14 +4,10 @@ import { formatMunicipalityLabel } from "../utils/location.js";
 export async function reverseGeocodeMunicipality(lat, lon) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ja`;
   const data = await fetchJsonWithTimeout(url, 4000);
-  const label = formatMunicipalityLabel(data?.address);
+  const label = formatMunicipalityLabel(data?.address, data?.display_name);
 
   if (label) {
     return label;
-  }
-
-  if (typeof data?.display_name === "string" && data.display_name.trim()) {
-    return data.display_name.split(",").slice(0, 2).join(" ");
   }
 
   return "";
@@ -44,18 +40,24 @@ export async function getIpGeolocation(reason) {
   ];
 
   let lastError =
-    reason instanceof Error ? reason : new Error(String(reason || "IP fallback requested"));
+    reason instanceof Error
+      ? reason
+      : new Error(String(reason || "IP fallback requested"));
 
   for (const endpoint of endpoints) {
     try {
       const data = await fetchJsonWithTimeout(endpoint.url, 3500);
       const location = endpoint.extract(data);
 
-      if (typeof location.lat === "number" && typeof location.lon === "number") {
+      if (
+        typeof location.lat === "number" &&
+        typeof location.lon === "number"
+      ) {
+        const label = await reverseGeocodeMunicipality(location.lat, location.lon);
         return {
           lat: location.lat,
           lon: location.lon,
-          label: location.label,
+          label: label || location.label,
           source: endpoint.name,
         };
       }

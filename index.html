@@ -585,7 +585,8 @@
           async (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            if (loadingText) loadingText.innerText = "市区町村名を取得中...";
+            if (loadingText)
+              loadingText.innerText = "都道府県・市区町村名を取得中...";
 
             try {
               const locationLabel = await reverseGeocodeMunicipality(lat, lon);
