@@ -358,19 +358,19 @@
             </p>
             <ul class="list-disc pl-4 space-y-2">
               <li>
-                <strong>安全領域 (25℃以下):</strong>
+                <strong>安全 (25℃以下):</strong>
                 犬の平均体温（約38.5℃）より十分低く、直射日光による持続的加熱が発生しない熱的平衡状態。
               </li>
               <li>
-                <strong>注意領域 (25.1〜35.0℃):</strong>
-                肉球への直接的な損傷リスクは極めて低いですが、犬の体高が低いためにアスファルトからの「輻射熱（放射熱）」を受け、体温調整が困難になり始める臨界領域。
+                <strong>注意 (25.1〜35.0℃):</strong>
+                肉球への直接的な損傷リスクは極めて低いですが、犬の体高が低いためにアスファルトからの「輻射熱（放射熱）」を受け、体温調整が困難になり始めます。
               </li>
               <li>
-                <strong>危険領域 (35.1〜45.0℃):</strong>
+                <strong>危険 (35.1〜45.0℃):</strong>
                 皮膚温度が44℃を超えて長時間接触すると、徐々に細胞の熱損傷（低温熱傷）が進行し始めます。
               </li>
               <li>
-                <strong>絶対NG領域 (45.1℃以上):</strong>
+                <strong>絶対NG (45.1℃以上):</strong>
                 アスファルト表面が50℃に達する<strong>「約1分間の接触」</strong>で、60℃では<strong>「数秒」</strong>で真皮に至る熱傷（II度〜III度熱傷）を引き起こすことが実験的臨床データから知られています。
               </li>
             </ul>
@@ -410,7 +410,8 @@
               本サービスが提供する路面予測温度は、Open-Meteoが提供する広域気象データに基づく理論計算値です。
             </p>
             <p>
-              2. アスファルトの実際の温度は、<strong>周囲の建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong>などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
+              2.
+              アスファルトの実際の温度は、<strong>周囲の建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong>などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
             </p>
             <p class="font-bold text-slate-700">
               3.
@@ -442,7 +443,26 @@
       </p>
     </footer>
 
-    <script>
+    <script type="module">
+      import {
+        CANVAS_HEIGHT,
+        GRAPH_PADDING_LEFT,
+        HOUR_STEP_WIDTH,
+      } from "./src/constants.js";
+      import { getJstDateParts, getJstHour } from "./src/utils/date.js";
+      import {
+        calculateAdvancedSurfaceTemperature,
+        getStatusMetadata,
+      } from "./src/utils/temperature.js";
+      import {
+        getIpGeolocation,
+        reverseGeocodeMunicipality,
+      } from "./src/services/geolocation.js";
+      import { fetchWeatherForecast } from "./src/services/weather.js";
+      import { renderResultCard } from "./src/render/result-card.js";
+      import { renderTimelineCards } from "./src/render/timeline.js";
+      import { drawCanvasGraph } from "./src/canvas/graph.js";
+
       // グローバルデータ保持
       let weatherForecastData = null;
       let selectedDayOffset = 0; // 0: 今日, 1: 明日, 2: 明後日
@@ -459,9 +479,9 @@
       let daySyncTimer = null;
 
       // グラフエリア（Canvasサイズ設定）
-      const canvasHeight = 240;
-      const hourStepWidth = 70; // 1時間あたりの幅px
-      const graphPaddingLeft = 30;
+      const canvasHeight = CANVAS_HEIGHT;
+      const hourStepWidth = HOUR_STEP_WIDTH; // 1時間あたりの幅px
+      const graphPaddingLeft = GRAPH_PADDING_LEFT;
 
       // --- DOM要素とイベントリスナーの安全な初期化処理 ---
       function initDOMElements() {
@@ -471,35 +491,6 @@
         }
         scrollArea = document.getElementById("graph-scroll-area");
         outerContainer = document.querySelector(".graph-outer-container");
-      }
-
-      function getJstDateParts(date = new Date()) {
-        const formatter = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Tokyo",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        });
-        const parts = formatter.formatToParts(date);
-        return {
-          year: Number(parts.find((part) => part.type === "year")?.value),
-          month: Number(parts.find((part) => part.type === "month")?.value),
-          day: Number(parts.find((part) => part.type === "day")?.value),
-        };
-      }
-
-      function getJstDateKey(date = new Date()) {
-        const { year, month, day } = getJstDateParts(date);
-        return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      }
-
-      function getJstHour(date = new Date()) {
-        const formatter = new Intl.DateTimeFormat("en-GB", {
-          timeZone: "Asia/Tokyo",
-          hour: "2-digit",
-          hour12: false,
-        });
-        return Number(formatter.format(date));
       }
 
       function getForecastBaseDateKey() {
@@ -512,46 +503,15 @@
 
         const { year, month, day } = getJstDateParts(new Date());
         const currentDate = new Date(Date.UTC(year, month - 1, day));
-        const [baseYear, baseMonth, baseDay] = baseDateKey.split("-").map(Number);
+        const [baseYear, baseMonth, baseDay] = baseDateKey
+          .split("-")
+          .map(Number);
         const baseDate = new Date(Date.UTC(baseYear, baseMonth - 1, baseDay));
 
         return Math.max(
           0,
           Math.round((currentDate.getTime() - baseDate.getTime()) / 86400000),
         );
-      }
-
-      function buildRollingWindow(hourly, startIndex) {
-        const points = [];
-
-        for (let offset = 0; offset < 24; offset++) {
-          const idx = startIndex + offset;
-          if (idx >= hourly.time.length) break;
-
-          const timeStr = hourly.time[idx];
-          const dateObj = new Date(timeStr);
-          const temp = hourly.temperature_2m[idx];
-          const rad = hourly.shortwave_radiation[idx];
-          const wind = hourly.wind_speed_10m[idx];
-          const calculatedTs = calculateAdvancedSurfaceTemperature(
-            temp,
-            rad,
-            wind,
-          );
-
-          points.push({
-            timeStr,
-            dateKey: timeStr.slice(0, 10),
-            hour: dateObj.getHours(),
-            temp,
-            rad,
-            wind,
-            surfaceTemp: calculatedTs,
-            meta: getStatusMetadata(calculatedTs),
-          });
-        }
-
-        return points;
       }
 
       function startDaySyncTimer() {
@@ -603,140 +563,6 @@
           content.classList.add("hidden");
           icon.classList.remove("rotate-180");
         }
-      }
-
-      // --- 高精度アスファルト路面温度推定（熱収支物理モデル） ---
-      function calculateAdvancedSurfaceTemperature(Ta, Rs, U) {
-        const absorbedSolar = Rs * 0.85;
-        const heatTransferCoeff = 10.0 + 4.0 * Math.max(0.1, U);
-
-        let longwaveCooling = 0;
-        if (Rs < 10) {
-          longwaveCooling = -3.5 * (1.0 - U * 0.05);
-        }
-
-        let tempRise = 0;
-        if (absorbedSolar > 0) {
-          tempRise = absorbedSolar / heatTransferCoeff;
-          if (tempRise > 25) {
-            tempRise = 25 + (tempRise - 25) * 0.5;
-          }
-        }
-
-        const estimatedTs = Ta + tempRise + longwaveCooling;
-        return Math.max(-15, Math.min(75, estimatedTs));
-      }
-
-      // --- 温度判定閾値とスタイル設定 ---
-      function getStatusMetadata(surfaceTemp) {
-        if (surfaceTemp <= 25) {
-          return {
-            label: "安全（お散歩に最適）",
-            colorClass: "from-emerald-500 to-teal-600",
-            borderClass: "border-emerald-200",
-            textClass: "text-emerald-600",
-            bgClass: "bg-emerald-50 text-emerald-800",
-            indicator: "bg-emerald-500",
-            chartColor: "#10b981", // クリーンな緑
-            icon: "smile",
-            advice:
-              "路面温度が低く安全です。肉球へのダメージの心配はなく、快適にお散歩ができます。",
-          };
-        } else if (surfaceTemp <= 35) {
-          return {
-            label: "注意（日陰を選んで）",
-            colorClass: "from-yellow-400 to-amber-500 text-slate-900", // 背景は明るい黄色
-            borderClass: "border-yellow-300",
-            textClass: "text-amber-600",
-            bgClass: "bg-yellow-50 text-yellow-900 border border-yellow-100",
-            indicator: "bg-yellow-400",
-            chartColor: "#eab308", // 明確なイエローゴールド
-            icon: "meh",
-            advice:
-              "アスファルトが温まっています。可能な限り影を歩くか、芝生・草むらルートを選択してください。",
-          };
-        } else if (surfaceTemp <= 45) {
-          return {
-            label: "危険（日向は絶対NG）",
-            colorClass: "from-orange-500 to-red-500",
-            borderClass: "border-orange-300",
-            textClass: "text-orange-600",
-            bgClass: "bg-orange-50 text-orange-800",
-            indicator: "bg-orange-500",
-            chartColor: "#f97316", // 鮮やかなオレンジ
-            icon: "frown",
-            advice:
-              "数分で肉球に火傷を負う恐れがあります。アスファルトからの距離が近いワンちゃんは熱中症の危険大です。",
-          };
-        } else {
-          return {
-            label: "絶対NG（重大な火傷リスク）",
-            colorClass: "from-rose-600 to-red-800",
-            borderClass: "border-rose-400",
-            textClass: "text-rose-600",
-            bgClass: "bg-rose-50 text-rose-800",
-            indicator: "bg-rose-600",
-            chartColor: "#e11d48", // 警告を伝えるローズレッド
-            icon: "alert-triangle",
-            advice:
-              "路面はフライパン状態です。一瞬の接触でも極めて危険なため、地面が完全に冷めるまで外出は控えてください。",
-          };
-        }
-      }
-
-      function pickMunicipalityName(address) {
-        return (
-          address?.city ||
-          address?.town ||
-          address?.village ||
-          address?.municipality ||
-          address?.city_district ||
-          address?.county ||
-          address?.suburb ||
-          address?.hamlet ||
-          address?.locality ||
-          ""
-        );
-      }
-
-      function pickPrefectureName(address) {
-        return (
-          address?.state ||
-          address?.region ||
-          address?.province ||
-          address?.state_district ||
-          ""
-        );
-      }
-
-      function formatMunicipalityLabel(address) {
-        const prefecture = pickPrefectureName(address);
-        const municipality = pickMunicipalityName(address);
-
-        if (prefecture && municipality) {
-          return `${prefecture} ${municipality}`;
-        }
-
-        return prefecture || municipality || "";
-      }
-
-      async function reverseGeocodeMunicipality(lat, lon) {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ja`;
-        const data = await fetchJsonWithTimeout(url, 4000);
-        const label = formatMunicipalityLabel(data?.address);
-
-        if (label) {
-          return label;
-        }
-
-        if (
-          typeof data?.display_name === "string" &&
-          data.display_name.trim()
-        ) {
-          return data.display_name.split(",").slice(0, 2).join(" ");
-        }
-
-        return "";
       }
 
       // --- GPS連動およびデータ取得（ハイブリッド位置特定） ---
@@ -797,98 +623,31 @@
         );
       }
 
-      async function fetchJsonWithTimeout(url, timeoutMs = 3500) {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(
-          () => controller.abort(),
-          timeoutMs,
-        );
-
-        try {
-          const response = await fetch(url, {
-            signal: controller.signal,
-            cache: "no-store",
-          });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return await response.json();
-        } finally {
-          window.clearTimeout(timeoutId);
-        }
-      }
-
       async function fallbackToIPGeolocation(reason) {
         const loadingText = document.getElementById("loading-text");
         if (loadingText)
           loadingText.innerText = "GPSが使えないため、IPから現在地を推定中...";
-
-        const endpoints = [
-          {
-            name: "freeipapi",
-            url: "https://free.freeipapi.com/api/json",
-            extract: (data) => ({
-              lat: data?.latitude,
-              lon: data?.longitude,
-              label: [data?.country_name, data?.region, data?.city]
-                .filter(Boolean)
-                .join(" / "),
-            }),
-          },
-          {
-            name: "ipapi",
-            url: "https://ipapi.co/json/",
-            extract: (data) => ({
-              lat: data?.latitude,
-              lon: data?.longitude,
-              label: [data?.country_name, data?.region, data?.city]
-                .filter(Boolean)
-                .join(" / "),
-            }),
-          },
-        ];
-
-        let lastError =
-          reason instanceof Error
-            ? reason
-            : new Error(String(reason || "IP fallback requested"));
-
-        for (const endpoint of endpoints) {
-          try {
-            const data = await fetchJsonWithTimeout(endpoint.url, 3500);
-            const location = endpoint.extract(data);
-
-            if (
-              typeof location.lat === "number" &&
-              typeof location.lon === "number"
-            ) {
-              document.getElementById("location-name").innerText =
-                location.label
-                  ? `${location.label} (IP推定)`
-                  : "IP推定の現在地";
-              if (loadingText) {
-                loadingText.innerText =
-                  endpoint.name === "freeipapi"
-                    ? "freeipapi.com で位置を推定しました"
-                    : "ipapi.co で位置を推定しました";
-              }
-              await fetchPrediction(location.lat, location.lon);
-              return true;
-            }
-
-            lastError = new Error(
-              `${endpoint.name} returned invalid coordinates`,
-            );
-          } catch (error) {
-            lastError = error;
-            console.warn(`${endpoint.name} geolocation failed`, error);
+        try {
+          const location = await getIpGeolocation(reason);
+          document.getElementById("location-name").innerText = location.label
+            ? `${location.label} (IP推定)`
+            : "IP推定の現在地";
+          if (loadingText) {
+            loadingText.innerText =
+              location.source === "freeipapi"
+                ? "freeipapi.com で位置を推定しました"
+                : "ipapi.co で位置を推定しました";
           }
+          await fetchPrediction(location.lat, location.lon);
+          return true;
+        } catch (error) {
+          console.error(
+            "すべての位置特定APIが失敗しました。デモ地点を表示します。",
+            error,
+          );
+          tryDemoData();
+          return false;
         }
-
-        console.error(
-          "すべての位置特定APIが失敗しました。デモ地点を表示します。",
-          lastError,
-        );
-        tryDemoData();
-        return false;
       }
 
       function tryDemoData() {
@@ -918,29 +677,19 @@
         }
 
         let responseData = null;
-        let retryDelay = 1000;
-
-        for (let i = 0; i < 5; i++) {
-          try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,shortwave_radiation,wind_speed_10m,relative_humidity_2m&hourly=temperature_2m,shortwave_radiation,wind_speed_10m&timezone=Asia%2FTokyo&forecast_days=3`;
-            const res = await fetch(url);
-            if (res.ok) {
-              responseData = await res.json();
-              break;
-            }
-          } catch (e) {}
-          await new Promise((r) => setTimeout(r, retryDelay));
-          retryDelay *= 2;
-        }
-
-        if (loader) loader.classList.add("hidden");
-
-        if (!responseData) {
+        try {
+          responseData = await fetchWeatherForecast(lat, lon);
+        } catch (error) {
+          if (loader) loader.classList.add("hidden");
           showError(
-            "気象予測データのロードに失敗しました。接続状態をご確認ください。",
+            error instanceof Error
+              ? error.message
+              : "気象予測データのロードに失敗しました。接続状態をご確認ください。",
           );
           return;
         }
+
+        if (loader) loader.classList.add("hidden");
 
         const iconBox = document.getElementById("location-icon-box");
         if (iconBox)
@@ -953,7 +702,6 @@
       function renderAllForecasts() {
         if (!weatherForecastData) return;
 
-        // --- 1. 現在の実況判定 ---
         const current = weatherForecastData.current;
         const currentSurface = calculateAdvancedSurfaceTemperature(
           current.temperature_2m,
@@ -963,76 +711,7 @@
         const meta = getStatusMetadata(currentSurface);
 
         const resultCard = document.getElementById("result-card");
-        if (resultCard) {
-          // 注意（黄色系）の時だけ、文字色が白だと見づらいため、黒寄りの文字色に切り替える
-          const textContrastClass =
-            currentSurface > 25 && currentSurface <= 35
-              ? "text-slate-900"
-              : "text-white";
-          const subTextContrastClass =
-            currentSurface > 25 && currentSurface <= 35
-              ? "text-slate-750 font-semibold"
-              : "text-white/90 font-medium";
-          const iconBgContrastClass =
-            currentSurface > 25 && currentSurface <= 35
-              ? "bg-black/10 text-slate-900"
-              : "bg-white/15 text-white";
-          const iconContrastClass =
-            currentSurface > 25 && currentSurface <= 35
-              ? "text-slate-900"
-              : "text-orange-500";
-
-          resultCard.className = `bg-gradient-to-br ${meta.colorClass} border ${meta.borderClass} rounded-[2.5rem] p-6 ${textContrastClass} relative overflow-hidden shadow-lg transition-custom`;
-
-          resultCard.innerHTML = `
-                    <div class="absolute -right-12 -bottom-12 text-black/5 select-none pointer-events-none transform rotate-12">
-                        <i data-lucide="paw-print" class="w-56 h-56"></i>
-                    </div>
-
-                    <div class="relative z-10 space-y-5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black tracking-wider bg-black/10 px-3 py-1.5 rounded-full uppercase">現在のお散歩コンディション</span>
-                            <div class="flex items-center space-x-1.5 text-xs font-bold bg-black/10 px-2.5 py-1 rounded-lg">
-                                <i data-lucide="wind" class="w-3.5 h-3.5"></i>
-                                <span>風速: ${current.wind_speed_10m.toFixed(1)} m/s</span>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div class="text-center md:text-left space-y-2">
-                                <h2 class="text-2xl md:text-4xl font-black tracking-tight">${meta.label}</h2>
-                                <p class="text-xs ${subTextContrastClass} max-w-md leading-relaxed">${meta.advice}</p>
-                            </div>
-
-                            <!-- 推定路面温度ディスプレイ -->
-                            <div class="${iconBgContrastClass} backdrop-blur-md rounded-3xl p-4 flex items-center space-x-4 shrink-0 min-w-[210px] justify-center border border-white/10 shadow-inner">
-                                <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                    <i data-lucide="${meta.icon}" class="w-6 h-6 ${iconContrastClass}"></i>
-                                </div>
-                                <div class="text-left">
-                                    <span class="text-[10px] font-bold block opacity-80">推定アスファルト温度</span>
-                                    <div class="text-3xl font-black tracking-tight">${currentSurface.toFixed(1)} <span class="text-lg font-normal">℃</span></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
-                            <div class="bg-black/5 p-2 rounded-xl">
-                                <span class="text-[10px] block opacity-60">周辺気温</span>
-                                <span class="font-bold text-sm">${current.temperature_2m.toFixed(1)} ℃</span>
-                            </div>
-                            <div class="bg-black/5 p-2 rounded-xl">
-                                <span class="text-[10px] block opacity-60">日射エネルギー</span>
-                                <span class="font-bold text-sm">${current.shortwave_radiation.toFixed(0)} W/m²</span>
-                            </div>
-                            <div class="bg-black/5 p-2 rounded-xl">
-                                <span class="text-[10px] block opacity-60">現在の湿度</span>
-                                <span class="font-bold text-sm">${current.relative_humidity_2m}%</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-        }
+        renderResultCard(resultCard, current, currentSurface, meta);
 
         // --- 2. 3日間お散歩タイムラインの更新 ---
         const timelineSection = document.getElementById("timeline-section");
@@ -1076,7 +755,8 @@
       function updateDayTabUI() {
         const daysText = ["本日", "明日", "明後日"];
         const indicator = document.getElementById("graph-date-indicator");
-        if (indicator) indicator.innerText = daysText[selectedDayOffset] || "本日";
+        if (indicator)
+          indicator.innerText = daysText[selectedDayOffset] || "本日";
 
         for (let i = 0; i < 3; i++) {
           const tab = document.getElementById(`day-tab-${i}`);
@@ -1162,51 +842,21 @@
                 .concat(dayDataPoints.slice(0, currentHourIndex))
             : dayDataPoints;
 
-        // --- A. HTML タイムリスト表示の構築 ---
         const container = document.getElementById("timeline-cards-container");
-        if (container) {
-          container.innerHTML = "";
+        renderTimelineCards(container, timelineDisplayPoints, isCurrentDayView);
+        drawCanvasGraph({
+          ctx,
+          dataPoints: dayDataPoints,
+          currentHourVal,
+          highlightCurrent: isCurrentDayView,
+          maxScrollWidth,
+          canvasHeight,
+          hourStepWidth,
+          graphPaddingLeft,
+        });
 
-          timelineDisplayPoints.forEach((dp, i) => {
-            const isCurrent = isCurrentDayView && i === 0;
-            const itemRow = document.createElement("div");
-            itemRow.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-custom ${
-              isCurrent
-                ? "bg-orange-50/50 border-orange-200 shadow-sm"
-                : "bg-slate-50 border-slate-100 hover:bg-slate-100/40"
-            }`;
-
-            itemRow.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 text-center shrink-0">
-                                <span class="text-[9px] font-bold text-slate-400 block">時間</span>
-                                <span class="text-xs font-black text-slate-700">${dp.hour}:00</span>
-                                <span class="text-[9px] font-bold text-slate-400 block">${dp.dateKey.slice(5).replace("-", "/")}</span>
-                            </div>
-                            <div class="w-2.5 h-10 rounded-full ${dp.meta.indicator}"></div>
-                            <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-bold text-slate-800">${dp.meta.label}</span>
-                                    ${isCurrent ? '<span class="text-[9px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded animate-pulse">現在</span>' : ""}
-                                </div>
-                                <p class="text-[9px] text-slate-400">気温 ${dp.temp.toFixed(1)}℃ / 風速 ${dp.wind.toFixed(1)}m/s / 日射 ${dp.rad.toFixed(0)}W</p>
-                            </div>
-                        </div>
-                        
-                        <div class="text-right shrink-0">
-                            <span class="text-[9px] font-bold text-slate-400 block">路面予測</span>
-                            <span class="text-xs font-black ${dp.meta.textClass}">${dp.surfaceTemp.toFixed(1)}℃</span>
-                        </div>
-                    `;
-            container.appendChild(itemRow);
-          });
-        }
-
-        // --- B. Canvas折れ線グラフのレンダリング ---
-        drawCanvasGraph(dayDataPoints, currentHourVal, isCurrentDayView);
-
-        // --- C. スクロール位置制御 ---
-        const isCompactViewport = window.matchMedia("(max-width: 640px)").matches;
+        const isCompactViewport =
+          window.matchMedia("(max-width: 640px)").matches;
         if (isCurrentDayView) {
           const targetPixel = isCompactViewport
             ? currentHourIndex * hourStepWidth - graphPaddingLeft
@@ -1219,148 +869,6 @@
         }
 
         lucide.createIcons();
-      }
-
-      // HTML5 Canvasによるリッチなお散歩お天気予測グラフの描画
-      function drawCanvasGraph(dataPoints, currentHourVal, highlightCurrent = false) {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, maxScrollWidth, canvasHeight);
-
-        const paddingLeft = graphPaddingLeft;
-        const graphHeight = 150;
-        const startY = 40; // 上部マージン
-
-        const minTemp = -5;
-        const maxTemp = 60;
-        const tempRange = maxTemp - minTemp;
-
-        const getCanvasY = (temp) => {
-          const ratio = (temp - minTemp) / tempRange;
-          return startY + graphHeight - ratio * graphHeight;
-        };
-
-        // 1. 各温度カテゴリの背景バンドを鮮やかに描画
-        const bandColors = [
-          "rgba(16, 185, 129, 0.05)", // 安全: 緑
-          "rgba(250, 204, 21, 0.08)", // 注意: 鮮やかな黄
-          "rgba(249, 115, 22, 0.05)", // 危険: 橙
-          "rgba(225, 29, 72, 0.05)", // 絶対NG: 深紅
-        ];
-
-        // 安全帯
-        ctx.fillStyle = bandColors[0];
-        ctx.fillRect(
-          0,
-          getCanvasY(25),
-          maxScrollWidth,
-          getCanvasY(minTemp) - getCanvasY(25),
-        );
-        // 注意帯
-        ctx.fillStyle = bandColors[1];
-        ctx.fillRect(
-          0,
-          getCanvasY(35),
-          maxScrollWidth,
-          getCanvasY(25) - getCanvasY(35),
-        );
-        // 危険帯
-        ctx.fillStyle = bandColors[2];
-        ctx.fillRect(
-          0,
-          getCanvasY(45),
-          maxScrollWidth,
-          getCanvasY(35) - getCanvasY(45),
-        );
-        // 絶対NG帯
-        ctx.fillStyle = bandColors[3];
-        ctx.fillRect(0, 0, maxScrollWidth, getCanvasY(45));
-
-        // 水平の境界線を描画
-        ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
-        ctx.lineWidth = 1;
-        [0, 10, 20, 30, 40, 50, 60].forEach((t) => {
-          const y = getCanvasY(t);
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(maxScrollWidth, y);
-          ctx.stroke();
-
-          // Y軸目盛り数値
-          ctx.fillStyle = "rgba(100, 116, 139, 0.7)";
-          ctx.font = "bold 9px sans-serif";
-          ctx.fillText(`${t}℃`, 8, y - 4);
-        });
-
-        // 2. グリッド(縦線)と時間のテキスト描画
-        dataPoints.forEach((dp, i) => {
-          const x = paddingLeft + i * hourStepWidth;
-
-          ctx.strokeStyle = "rgba(241, 245, 249, 0.9)";
-          ctx.beginPath();
-          ctx.moveTo(x, startY);
-          ctx.lineTo(x, startY + graphHeight);
-          ctx.stroke();
-
-          ctx.fillStyle = "rgba(100, 116, 139, 1)";
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`${dp.hour}:00`, x, startY + graphHeight + 18);
-
-          if (highlightCurrent && dp.hour === currentHourVal) {
-            ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
-            ctx.fillRect(x - hourStepWidth / 2, 0, hourStepWidth, canvasHeight);
-
-            ctx.strokeStyle = "rgba(249, 115, 22, 0.4)";
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, startY + graphHeight + 30);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            ctx.fillStyle = "rgba(249, 115, 22, 1)";
-            ctx.font = "bold 8px sans-serif";
-            ctx.fillText("現在", x, startY - 22);
-          }
-        });
-
-        // 3. 折れ線の描画
-        ctx.beginPath();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = "rgba(71, 85, 105, 0.85)";
-
-        dataPoints.forEach((dp, i) => {
-          const x = paddingLeft + i * hourStepWidth;
-          const y = getCanvasY(dp.surfaceTemp);
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
-        ctx.stroke();
-
-        // 4. 各ノード（ポイント）に丸と温度情報を描画
-        dataPoints.forEach((dp, i) => {
-          const x = paddingLeft + i * hourStepWidth;
-          const y = getCanvasY(dp.surfaceTemp);
-
-          ctx.fillStyle = dp.meta.chartColor;
-          ctx.beginPath();
-          ctx.arc(x, y, 5.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = "#ffffff";
-          ctx.beginPath();
-          ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = "rgba(15, 23, 42, 1)";
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`${dp.surfaceTemp.toFixed(1)}°`, x, y - 10);
-        });
       }
 
       // --- ドラッグ ＆ スワイプ操作用インタラクション設計 ---
@@ -1436,6 +944,13 @@
 
         // 起動時に白紙画面を防ぐため、自動で東京の天気予測をロード（親切なUX設計）
         tryDemoData();
+      });
+
+      Object.assign(window, {
+        changeActiveDay,
+        getGeolocatedWeather,
+        toggleAccordion,
+        tryDemoData,
       });
     </script>
   </body>
