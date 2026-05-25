@@ -104,7 +104,7 @@
             class="w-full sm:w-auto bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-custom flex items-center justify-center space-x-2"
           >
             <i data-lucide="navigation" class="w-4 h-4"></i>
-            <span>GPSから天気を読み込む</span>
+            <span>GPS現在地から天気を読み込む</span>
           </button>
         </div>
 
@@ -432,11 +432,12 @@
     <footer
       class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 space-y-2 mt-auto"
     >
-      <p>© 2026 わんこお散歩ロード予測 Project</p>
+      <p>© 2026 にくきゅう天気予報 @mzksoup</p>
       <p class="text-[10px] px-4">
         気象予測エンジン:
         <a
           href="https://open-meteo.com/"
+          target="_blank"
           class="underline hover:text-orange-500"
           >Open-Meteo API</a
         >
@@ -589,14 +590,70 @@
         }
       }
 
+      function pickMunicipalityName(address) {
+        return (
+          address?.city ||
+          address?.town ||
+          address?.village ||
+          address?.municipality ||
+          address?.city_district ||
+          address?.county ||
+          address?.suburb ||
+          address?.hamlet ||
+          address?.locality ||
+          ""
+        );
+      }
+
+      function pickPrefectureName(address) {
+        return (
+          address?.state ||
+          address?.region ||
+          address?.province ||
+          address?.state_district ||
+          ""
+        );
+      }
+
+      function formatMunicipalityLabel(address) {
+        const prefecture = pickPrefectureName(address);
+        const municipality = pickMunicipalityName(address);
+
+        if (prefecture && municipality) {
+          return `${prefecture} ${municipality}`;
+        }
+
+        return prefecture || municipality || "";
+      }
+
+      async function reverseGeocodeMunicipality(lat, lon) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ja`;
+        const data = await fetchJsonWithTimeout(url, 4000);
+        const label = formatMunicipalityLabel(data?.address);
+
+        if (label) {
+          return label;
+        }
+
+        if (
+          typeof data?.display_name === "string" &&
+          data.display_name.trim()
+        ) {
+          return data.display_name.split(",").slice(0, 2).join(" ");
+        }
+
+        return "";
+      }
+
       // --- GPS連動およびデータ取得（ハイブリッド位置特定） ---
       function getGeolocatedWeather() {
         const loader = document.getElementById("loading-state");
         const errorCard = document.getElementById("error-card");
+        const loadingText = document.getElementById("loading-text");
 
         if (errorCard) errorCard.classList.add("hidden");
         if (loader) loader.classList.remove("hidden");
-        document.getElementById("loading-text").innerText = "現在地を特定中...";
+        if (loadingText) loadingText.innerText = "現在地を特定中...";
 
         const geoOptions = {
           enableHighAccuracy: false,
@@ -617,11 +674,22 @@
         }
 
         navigator.geolocation.getCurrentPosition(
-          (position) => {
+          async (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            document.getElementById("location-name").innerText =
-              `GPS現在地 (緯度:${lat.toFixed(2)} / 経度:${lon.toFixed(2)})`;
+            if (loadingText) loadingText.innerText = "市区町村名を取得中...";
+
+            try {
+              const locationLabel = await reverseGeocodeMunicipality(lat, lon);
+              document.getElementById("location-name").innerText = locationLabel
+                ? `${locationLabel} (GPS現在地)`
+                : `GPS現在地 (緯度:${lat.toFixed(2)} / 経度:${lon.toFixed(2)})`;
+            } catch (error) {
+              console.warn("GPS位置の逆ジオコーディングに失敗しました:", error);
+              document.getElementById("location-name").innerText =
+                `GPS現在地 (緯度:${lat.toFixed(2)} / 経度:${lon.toFixed(2)})`;
+            }
+
             fetchPrediction(lat, lon);
           },
           (error) => {
