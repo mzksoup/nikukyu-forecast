@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>にくきゅう天気予報 | 高精度アスファルト温度予報</title>
+    <title>にくきゅう天気予報 | アスファルト温度予報</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -291,7 +291,7 @@
             class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
           >
             <p>
-              アスファルトの表面温度は、単純な「気温」だけではなく、太陽光による熱供給（日射）と周囲の空気への放熱（対流および放射）のバランスである<strong>「地表面熱収支方程式」</strong>によって決まります。
+              アスファルトの表面温度は、気温に加えて日射吸収と風による冷却の影響を受けます。本アプリでは<strong>相当外気温度モデル</strong>を使い、気温・日射量・風速から推定しています。
             </p>
             <div
               class="p-3 bg-slate-50 rounded-xl font-mono text-[11px] text-slate-700 space-y-1"
@@ -299,22 +299,19 @@
               <p class="font-bold text-slate-800">
                 【予測アルゴリズムの物理パラメータ】
               </p>
-              <p>・アスファルト日射吸収率: 0.85（一般的な高密舗装基準）</p>
-              <p>
-                ・対流放熱係数: 10.0 + 4.0 ×
-                風速(m/s)（風による強制冷却流モデル）
-              </p>
-              <p>
-                ・天空長波冷却（放射冷却）:
-                夜間無風時に最大約-3.5℃のマイナス補正
-              </p>
+              <p>・アスファルト日射吸収率: 0.85</p>
+              <p>・対流熱伝達率: 5.6 + 3.9 × max(0, 風速)</p>
+              <p>・放射熱伝達率: +5.0</p>
             </div>
             <p class="text-[10px] text-slate-400">
               【参考文献】<br />
               1.
-              土木学会論文集：『熱収支気象モデルを用いた各種舗装の路面温度予測に関する研究』<br />
-              2.
-              日本道路協会：『舗装設計施工指針』における舗装熱物性定数パラメータ
+              日本道路協会『舗装設計施工指針』アスファルトの熱物性値（アルベド・日射吸収率）に関する基準。<br />
+              2. J-STAGE
+              (土木学会論文集)『熱収支気象モデルを用いた各種舗装の路面温度予測に関する研究』路面熱収支モデルと風速係数の実証データ。<br />
+              3. ASHRAE Fundamentals Handbook /
+              建築環境工学外装表面の対流熱伝達率（Jürgesの式）とSol-air
+              temperature（相当外気温度）の計算定義。
             </p>
           </div>
         </div>
@@ -439,7 +436,7 @@
       } from "./src/constants.js";
       import { getJstDateParts, getJstHour } from "./src/utils/date.js";
       import {
-        calculateAdvancedSurfaceTemperature,
+        calculateVerifiedSurfaceTemperature,
         getStatusMetadata,
       } from "./src/utils/temperature.js";
       import {
@@ -692,7 +689,7 @@
         if (!weatherForecastData) return;
 
         const current = weatherForecastData.current;
-        const currentSurface = calculateAdvancedSurfaceTemperature(
+        const currentSurface = calculateVerifiedSurfaceTemperature(
           current.temperature_2m,
           current.shortwave_radiation,
           current.wind_speed_10m,
@@ -802,7 +799,7 @@
           const temp = hourly.temperature_2m[idx];
           const rad = hourly.shortwave_radiation[idx];
           const wind = hourly.wind_speed_10m[idx];
-          const calculatedTs = calculateAdvancedSurfaceTemperature(
+          const calculatedTs = calculateVerifiedSurfaceTemperature(
             temp,
             rad,
             wind,

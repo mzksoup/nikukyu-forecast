@@ -1,23 +1,24 @@
-export function calculateAdvancedSurfaceTemperature(Ta, Rs, U) {
-  const absorbedSolar = Rs * 0.85;
-  const heatTransferCoeff = 10.0 + 4.0 * Math.max(0.1, U);
+/**
+ * 高精度アスファルト路面温度推定（相当外気温度モデル準拠）
+ * @param {number|string} Ta 気温 (℃)
+ * @param {number|string} Rs 日射量 (W/m²)
+ * @param {number|string} U 風速 (m/s)
+ * @returns {number} 推定路面温度 (℃)
+ */
+export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
+  const tempAir = Number(Ta);
+  const solarRad = Number(Rs);
+  const windSpeed = Number(U);
 
-  let longwaveCooling = 0;
-  if (Rs < 10) {
-    longwaveCooling = -3.5 * (1.0 - U * 0.05);
-  }
+  const absorbedSolar = solarRad * 0.85;
+  const heatTransferCoeff = 5.6 + 3.9 * Math.max(0, windSpeed) + 5.0;
+  const tempRise = absorbedSolar / heatTransferCoeff;
 
-  let tempRise = 0;
-  if (absorbedSolar > 0) {
-    tempRise = absorbedSolar / heatTransferCoeff;
-    if (tempRise > 25) {
-      tempRise = 25 + (tempRise - 25) * 0.5;
-    }
-  }
-
-  const estimatedTs = Ta + tempRise + longwaveCooling;
-  return Math.max(-15, Math.min(75, estimatedTs));
+  return tempAir + tempRise;
 }
+
+export const calculateAdvancedSurfaceTemperature =
+  calculateVerifiedSurfaceTemperature;
 
 export function getStatusMetadata(surfaceTemp) {
   if (surfaceTemp <= 25) {
