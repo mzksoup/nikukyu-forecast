@@ -54,6 +54,12 @@ export function getRainLabel(mm, code) {
 export function getWeatherLabel(mm, code) {
   const precipitation = normalizeNumber(mm);
   const iconName = getWeatherIcon(code, precipitation ?? 0);
+
+  // If WMO code maps to a specific icon (e.g. snow/thunder), prefer that label.
+  if (iconName === "snow" || iconName === "thunderstorms-day-rain") {
+    return { label: getWeatherLabelFromIcon(iconName), meteoconsName: iconName };
+  }
+
   if (precipitation != null && precipitation > 0) {
     const precipitationLabel = getPrecipitationLabel(precipitation);
     return {
