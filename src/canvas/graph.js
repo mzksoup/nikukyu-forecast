@@ -13,7 +13,10 @@ function loadMeteoconsIcon(iconName) {
   const promise = new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.onerror = () => {
+      meteoconsIconCache.delete(iconName);
+      resolve(null);
+    };
     img.src = `${METEOCONS_CDN_BASE}/${iconName}.svg`;
   });
 
