@@ -156,5 +156,6 @@ export function getMeteoconsImgTag(iconName, size = 32) {
   if (!iconName) return "";
 
   const pixelSize = Number(size) || 32;
-  return `<img src="${METEOCONS_CDN_BASE}/${iconName}.svg" alt="${iconName}" width="${pixelSize}" height="${pixelSize}" style="width:${pixelSize}px;height:${pixelSize}px;display:block;" loading="eager" decoding="async" referrerpolicy="no-referrer" />`;
+  const altText = getWeatherLabelFromIcon(iconName) || iconName;
+  return `<img src="${METEOCONS_CDN_BASE}/${encodeURIComponent(iconName)}.svg" alt="${altText}" width="${pixelSize}" height="${pixelSize}" style="width:${pixelSize}px;height:${pixelSize}px;display:block;" loading="eager" decoding="async" referrerpolicy="no-referrer" />`;
 }
