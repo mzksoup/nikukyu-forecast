@@ -812,7 +812,8 @@
           const rad = hourly.shortwave_radiation[idx];
           const wind = hourly.wind_speed_10m[idx];
           const precipitation = hourly.precipitation?.[idx] ?? 0;
-          const weathercode = hourly.weather_code?.[idx] ?? null;
+          const weathercode =
+            hourly.weather_code?.[idx] ?? hourly.weathercode?.[idx] ?? null;
           const calculatedTs = calculateVerifiedSurfaceTemperature(
             temp,
             rad,
