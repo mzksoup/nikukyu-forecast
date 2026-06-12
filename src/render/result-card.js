@@ -1,8 +1,15 @@
+import {
+  getMeteoconsImgTag,
+  getWeatherIcon,
+} from "../utils/weather.js";
+
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
 
   const textContrastClass =
-    currentSurface > 25 && currentSurface <= 35 ? "text-slate-900" : "text-white";
+    currentSurface > 25 && currentSurface <= 35
+      ? "text-slate-900"
+      : "text-white";
   const subTextContrastClass =
     currentSurface > 25 && currentSurface <= 35
       ? "text-slate-750 font-semibold"
@@ -15,6 +22,11 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
     currentSurface > 25 && currentSurface <= 35
       ? "text-slate-900"
       : "text-orange-500";
+  const weatherCode = current.weather_code ?? current.weathercode;
+  const weatherIconName = getWeatherIcon(
+    weatherCode,
+    current.precipitation,
+  );
 
   resultCard.className = `bg-gradient-to-br ${meta.colorClass} border ${meta.borderClass} rounded-[2.5rem] p-6 ${textContrastClass} relative overflow-hidden shadow-lg transition-custom`;
   resultCard.innerHTML = `
@@ -48,18 +60,21 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
-        <div class="bg-black/5 p-2 rounded-xl">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
+        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
           <span class="text-[10px] block opacity-60">周辺気温</span>
-          <span class="font-bold text-sm">${current.temperature_2m.toFixed(1)} ℃</span>
+          <span class="font-bold text-sm leading-none mt-2">${current.temperature_2m.toFixed(1)} ℃</span>
         </div>
-        <div class="bg-black/5 p-2 rounded-xl">
+        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
           <span class="text-[10px] block opacity-60">日射エネルギー</span>
-          <span class="font-bold text-sm">${current.shortwave_radiation.toFixed(0)} W/m²</span>
+          <span class="font-bold text-sm leading-none mt-2">${current.shortwave_radiation.toFixed(0)} W/m²</span>
         </div>
-        <div class="bg-black/5 p-2 rounded-xl">
-          <span class="text-[10px] block opacity-60">現在の湿度</span>
-          <span class="font-bold text-sm">${current.relative_humidity_2m}%</span>
+        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex items-center justify-center">
+          <div class="flex items-center justify-center gap-2">
+            <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
+              ${getMeteoconsImgTag(weatherIconName, 48)}
+            </div>
+          </div>
         </div>
       </div>
     </div>
