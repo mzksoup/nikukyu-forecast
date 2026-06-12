@@ -77,6 +77,18 @@ export function getWeatherLabel(mm, code) {
 export function getWeatherIcon(code, precipitation = 0) {
   const precipitationAmount = normalizeNumber(precipitation);
   if (precipitationAmount != null && precipitationAmount > 0) {
+    const wmo = normalizeNumber(code);
+    // Snow/thunder WMO codes should take precedence even when precipitation > 0.
+    if (
+      wmo === 71 ||
+      wmo === 73 ||
+      wmo === 75 ||
+      wmo === 77 ||
+      wmo === 85 ||
+      wmo === 86
+    )
+      return "snow";
+    if (wmo === 95 || wmo === 96 || wmo === 99) return "thunderstorms-day-rain";
     if (precipitationAmount >= 20) return "thunderstorms-day-rain";
     if (precipitationAmount >= 1) return "rain";
     return "partly-cloudy-day-rain";
