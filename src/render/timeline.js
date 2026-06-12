@@ -74,11 +74,13 @@ export function renderHourlyGraphDetails(
   strip.style.marginLeft = "-5px";
 
   timelineDisplayPoints.forEach((dp) => {
+    const isCurrent = Boolean(dp.isCurrent);
+    const isCurrentClass = isCurrent ? "bg-[rgba(249,115,22,0.08)]" : "bg-transparent";
     const card = document.createElement("div");
-    card.className = "w-[70px] shrink-0 px-2 py-2";
+    card.className = `w-[70px] shrink-0 px-1.5 py-2 transition-custom ${isCurrentClass}`;
     card.innerHTML = `
-      <div class="space-y-1 text-center">
-        <div class="flex items-center gap-1.5">
+      <div class="space-y-1.5 text-center ${isCurrent ? "text-orange-700" : ""}">
+        <div class="flex items-center justify-center gap-1.5">
           <span class="w-2 h-2 rounded-full ${dp.meta.indicator} shrink-0"></span>
           <span class="text-[9px] font-bold leading-tight text-slate-700">${getSafetyLabel(dp.surfaceTemp)}</span>
         </div>

@@ -154,9 +154,15 @@
           class="relative z-10 flex flex-col items-center text-center py-10 space-y-4"
         >
           <div
-            class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100"
+            class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 overflow-hidden"
           >
-            <i data-lucide="sun-dim" class="w-8 h-8"></i>
+            <img
+              src="https://cdn.meteocons.com/3.0.0-next.10/svg/fill/clear-day.svg"
+              alt="clear-day"
+              width="32"
+              height="32"
+              style="width: 32px; height: 32px; display: block"
+            />
           </div>
           <div class="space-y-1">
             <h2 class="text-lg font-bold text-slate-800">
@@ -436,6 +442,10 @@
       } from "./src/constants.js";
       import { getJstDateParts, getJstHour } from "./src/utils/date.js";
       import {
+        getWeatherIcon,
+        getWeatherLabel,
+      } from "./src/utils/weather.js";
+      import {
         calculateVerifiedSurfaceTemperature,
         getStatusMetadata,
       } from "./src/utils/temperature.js";
@@ -467,6 +477,7 @@
       const canvasHeight = CANVAS_HEIGHT;
       const hourStepWidth = HOUR_STEP_WIDTH; // 1時間あたりの幅px
       const graphPaddingLeft = GRAPH_PADDING_LEFT;
+      let graphRenderToken = 0;
 
       // --- DOM要素とイベントリスナーの安全な初期化処理 ---
       function initDOMElements() {
@@ -776,6 +787,7 @@
         if (!weatherForecastData) return;
 
         const hourly = weatherForecastData.hourly;
+        const renderToken = ++graphRenderToken;
         const currentDayOffset = getCurrentForecastDayOffset();
         if (selectedDayOffset <= currentDayOffset) {
           selectedDayOffset = currentDayOffset;
@@ -799,11 +811,15 @@
           const temp = hourly.temperature_2m[idx];
           const rad = hourly.shortwave_radiation[idx];
           const wind = hourly.wind_speed_10m[idx];
+          const precipitation = hourly.precipitation?.[idx] ?? 0;
+          const weathercode = hourly.weather_code?.[idx] ?? null;
           const calculatedTs = calculateVerifiedSurfaceTemperature(
             temp,
             rad,
             wind,
           );
+          const weatherIcon = getWeatherIcon(weathercode, precipitation);
+          const weatherLabel = getWeatherLabel(precipitation, weathercode);
 
           dayDataPoints.push({
             timeStr,
@@ -812,8 +828,12 @@
             temp,
             rad,
             wind,
+            precipitation,
+            weathercode,
             surfaceTemp: calculatedTs,
             meta: getStatusMetadata(calculatedTs),
+            weatherIcon,
+            weatherLabel: weatherLabel.label,
           });
 
           if (isCurrentDayView && hour === currentHourVal) {
@@ -835,7 +855,7 @@
           timelineDisplayPoints,
           isCurrentDayView,
         );
-        drawCanvasGraph({
+        const graphDrawPromise = drawCanvasGraph({
           ctx,
           dataPoints: dayDataPoints,
           currentHourVal,
@@ -844,7 +864,13 @@
           canvasHeight,
           hourStepWidth,
           graphPaddingLeft,
+          shouldAbort: () => renderToken !== graphRenderToken,
         });
+        if (graphDrawPromise?.catch) {
+          graphDrawPromise.catch((error) => {
+            console.error("キャンバス描画に失敗しました:", error);
+          });
+        }
 
         const isCompactViewport =
           window.matchMedia("(max-width: 640px)").matches;

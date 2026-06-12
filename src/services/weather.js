@@ -4,7 +4,7 @@ export async function fetchWeatherForecast(lat, lon) {
 
   for (let i = 0; i < 5; i++) {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,shortwave_radiation,wind_speed_10m,relative_humidity_2m&hourly=temperature_2m,shortwave_radiation,wind_speed_10m&timezone=Asia%2FTokyo&forecast_days=3`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,shortwave_radiation,wind_speed_10m,relative_humidity_2m,precipitation,weather_code&hourly=temperature_2m,shortwave_radiation,wind_speed_10m,precipitation,weather_code&timezone=Asia%2FTokyo&forecast_days=3`;
       const response = await fetch(url);
       if (response.ok) {
         responseData = await response.json();
@@ -19,7 +19,9 @@ export async function fetchWeatherForecast(lat, lon) {
   }
 
   if (!responseData) {
-    throw new Error("気象予測データのロードに失敗しました。接続状態をご確認ください。");
+    throw new Error(
+      "気象予測データのロードに失敗しました。接続状態をご確認ください。",
+    );
   }
 
   return responseData;
