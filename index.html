@@ -3,6 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="犬の散歩前に確認。現在地のアスファルト路面温度を予測し、肉球への危険度をリアルタイム表示。"
+    />
+    <meta property="og:title" content="にくきゅう天気予報" />
+    <meta
+      property="og:description"
+      content="犬の散歩前に確認。現在地のアスファルト路面温度を予測し、肉球への危険度をリアルタイム表示"
+    />
+    <meta
+      property="og:image"
+      content="https://nikukyu-forecast.vercel.app/ogp.png"
+    />
+    <meta property="og:url" content="https://nikukyu-forecast.vercel.app/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "にくきゅう天気予報",
+        "description": "犬の散歩前に確認。現在地のアスファルト路面温度を予測し、肉球への危険度をリアルタイム表示。",
+        "url": "https://nikukyu-forecast.vercel.app/",
+        "applicationCategory": "LifestyleApplication"
+      }
+    </script>
+
     <title>にくきゅう天気予報 | アスファルト温度予報</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -441,10 +466,7 @@
         HOUR_STEP_WIDTH,
       } from "./src/constants.js";
       import { getJstDateParts, getJstHour } from "./src/utils/date.js";
-      import {
-        getWeatherIcon,
-        getWeatherLabel,
-      } from "./src/utils/weather.js";
+      import { getWeatherIcon, getWeatherLabel } from "./src/utils/weather.js";
       import {
         calculateVerifiedSurfaceTemperature,
         getStatusMetadata,
