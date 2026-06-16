@@ -20,7 +20,7 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
   // 3. 総合熱伝達率（風による強制冷却 + 空気への放射熱）
   // ユルゲスの式(5.6 + 3.9 * 風速) + 放射熱伝達係数(約5.0)
   const heatTransferCoeff = 5.6 + (3.9 * Math.max(0, windSpeed)) + 5.0;
-簡潔な
+
   // 4. 修正：大気・宇宙への長波放射冷却
   // 常に空に向かって逃げている熱（晴天時で約100W/m²の熱損失）
   const longwaveCooling = 100 / heatTransferCoeff;
