@@ -1,5 +1,5 @@
 /**
- * 高精度アスファルト路面温度推定（相当外気温度モデル準拠）
+ * アスファルト路面温度推定（地表面熱収支モデル準拠）
  * @param {number|string} Ta 気温 (℃)
  * @param {number|string} Rs 日射量 (W/m²)
  * @param {number|string} U 風速 (m/s)
@@ -10,9 +10,23 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
   const solarRad = Number(Rs);
   const windSpeed = Number(U);
 
+  // 1. 日射による純吸収エネルギー (アスファルトの吸収率0.85)
   const absorbedSolar = solarRad * 0.85;
-  const heatTransferCoeff = 5.6 + 3.9 * Math.max(0, windSpeed) + 5.0;
-  const tempRise = absorbedSolar / heatTransferCoeff;
+
+  // 2. 修正：：地中への熱伝導（蓄熱）の考慮
+  // アスファルトは吸収した熱の約30%を地中へ逃がし、残り70%が表面温度の上昇に関与する
+  const effectiveHeat = absorbedSolar * 0.70;
+
+  // 3. 総合熱伝達率（風による強制冷却 + 空気への放射熱）
+  // ユルゲスの式(5.6 + 3.9 * 風速) + 放射熱伝達係数(約5.0)
+  const heatTransferCoeff = 5.6 + (3.9 * Math.max(0, windSpeed)) + 5.0;
+簡潔な
+  // 4. 修正：大気・宇宙への長波放射冷却
+  // 常に空に向かって逃げている熱（晴天時で約100W/m²の熱損失）
+  const longwaveCooling = 100 / heatTransferCoeff;
+
+  // 5. 最終推定温度の計算
+  const tempRise = (effectiveHeat / heatTransferCoeff) - longwaveCooling;
 
   return tempAir + tempRise;
 }
