@@ -54,7 +54,7 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
+      <div class="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
         <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
           <span class="text-[10px] block opacity-60">周辺気温</span>
           <span class="font-bold text-sm leading-none mt-2">${current.temperature_2m.toFixed(1)} ℃</span>
