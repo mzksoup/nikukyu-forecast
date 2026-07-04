@@ -97,7 +97,11 @@ export function getWeatherIcon(code, precipitation = 0, hour = 12) {
 
   // Snow/thunder WMO codes take precedence even when precipitation > 0.
   if (wmo != null && SNOW_CODES.includes(wmo)) return "snow";
-  if (wmo != null && STORM_CODES.includes(wmo)) return "thunderstorms-day-rain";
+  if (wmo != null && STORM_CODES.includes(wmo)) {
+    return isNightHour(hour)
+      ? toNightIcon("thunderstorms-day-rain")
+      : "thunderstorms-day-rain";
+  }
 
   let icon;
   if (precipitationAmount != null && precipitationAmount > 0) {
