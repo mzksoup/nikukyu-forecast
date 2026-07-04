@@ -39,7 +39,7 @@ export async function drawCanvasGraph({
 
   const iconImages = await Promise.all(
     dataPoints.map((dp) =>
-      loadMeteoconsIcon(getWeatherIcon(dp.weathercode, dp.precipitation)),
+      loadMeteoconsIcon(getWeatherIcon(dp.weathercode, dp.precipitation, dp.hour)),
     ),
   );
 

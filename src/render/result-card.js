@@ -3,6 +3,13 @@ import {
   getWeatherIcon,
 } from "../utils/weather.js";
 
+function getJstHour() {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tokyo", hour: "2-digit", hour12: false,
+  });
+  return Number(formatter.format(new Date()));
+}
+
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
 
@@ -20,6 +27,7 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
   const weatherIconName = getWeatherIcon(
     weatherCode,
     current.precipitation,
+    getJstHour(),
   );
 
   resultCard.className = `bg-gradient-to-br ${meta.colorClass} border ${meta.borderClass} rounded-[2.5rem] p-6 ${textContrastClass} relative overflow-hidden shadow-lg transition-custom`;
