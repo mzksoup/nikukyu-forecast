@@ -17,7 +17,9 @@ export async function fetchWeatherForecast(lat, lon) {
     }
   }
 
-  throw new Error(
+  const error = new Error(
     "気象予測データのロードに失敗しました。接続状態をご確認ください。",
   );
+  error.cause = lastError;
+  throw error
 }
