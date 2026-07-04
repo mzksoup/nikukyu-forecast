@@ -895,7 +895,7 @@
             rad,
             wind,
           );
-          const weatherIcon = getWeatherIcon(weathercode, precipitation);
+          const weatherIcon = getWeatherIcon(weathercode, precipitation, hour);
           const weatherLabel = getWeatherLabel(precipitation, weathercode);
 
           dayDataPoints.push({

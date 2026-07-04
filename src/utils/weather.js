@@ -2,12 +2,24 @@ const METEOCONS_CDN_BASE = "https://cdn.meteocons.com/3.0.0-next.10/svg/fill";
 
 const ICON_LABELS = {
   "clear-day": "晴れ",
+  "clear-night": "晴れ",
   "overcast-day": "曇り",
   "fog-day": "霧",
+  "fog-night": "霧",
   rain: "雨",
   "partly-cloudy-day-rain": "小雨",
+  "partly-cloudy-night-rain": "小雨",
   "thunderstorms-day-rain": "雷雨",
+  "thunderstorms-night-rain": "雷雨",
   snow: "雪",
+};
+
+/** day→night のマッピング。夜(18〜6時)なら夜用に差し替え */
+const NIGHT_ICON_MAP = {
+  "clear-day": "clear-night",
+  "fog-day": "fog-night",
+  "partly-cloudy-day-rain": "partly-cloudy-night-rain",
+  "thunderstorms-day-rain": "thunderstorms-night-rain",
 };
 
 const SNOW_CODES = [71, 73, 75, 77, 85, 86];
@@ -31,6 +43,16 @@ function getPrecipitationLabel(mm) {
 
 function getWeatherLabelFromIcon(iconName) {
   return ICON_LABELS[iconName] || "";
+}
+
+function isNightHour(hour) {
+  // 18〜6時を夜とする（6→昼、18→夜）
+  const h = Number(hour);
+  return Number.isFinite(h) && (h >= 18 || h < 6);
+}
+
+function toNightIcon(iconName) {
+  return NIGHT_ICON_MAP[iconName] || iconName;
 }
 
 /**
@@ -66,9 +88,10 @@ export function getWeatherLabel(mm, code) {
  * WMO weathercodeと降水量からMeteocons名を返す
  * @param {number} code - WMO weathercode
  * @param {number} [precipitation=0] - 時間降水量 (mm/h)
+ * @param {number} [hour=12] - 時刻(0-23)。夜間(18-6)は夜用アイコンに差し替え
  * @returns {string|null}
  */
-export function getWeatherIcon(code, precipitation = 0) {
+export function getWeatherIcon(code, precipitation = 0, hour = 12) {
   const wmo = normalizeNumber(code);
   const precipitationAmount = normalizeNumber(precipitation);
 
@@ -76,19 +99,26 @@ export function getWeatherIcon(code, precipitation = 0) {
   if (wmo != null && SNOW_CODES.includes(wmo)) return "snow";
   if (wmo != null && STORM_CODES.includes(wmo)) return "thunderstorms-day-rain";
 
+  let icon;
   if (precipitationAmount != null && precipitationAmount > 0) {
-    if (precipitationAmount >= 20) return "thunderstorms-day-rain";
-    if (precipitationAmount >= 1) return "rain";
-    return "partly-cloudy-day-rain";
+    if (precipitationAmount >= 20) icon = "thunderstorms-day-rain";
+    else if (precipitationAmount >= 1) icon = "rain";
+    else icon = "partly-cloudy-day-rain";
+  } else if (wmo == null) {
+    icon = "overcast-day";
+  } else if (wmo === 0) {
+    icon = "clear-day";
+  } else if (wmo === 1 || wmo === 2 || wmo === 3) {
+    icon = "overcast-day";
+  } else if (wmo === 45 || wmo === 48) {
+    icon = "fog-day";
+  } else if (DRIZZLE_CODES.includes(wmo) || RAIN_CODES.includes(wmo)) {
+    icon = "rain";
+  } else {
+    icon = "overcast-day";
   }
 
-  if (wmo == null) return "overcast-day";
-  if (wmo === 0) return "clear-day";
-  if (wmo === 1 || wmo === 2 || wmo === 3) return "overcast-day";
-  if (wmo === 45 || wmo === 48) return "fog-day";
-  if (DRIZZLE_CODES.includes(wmo) || RAIN_CODES.includes(wmo)) return "rain";
-
-  return "overcast-day";
+  return isNightHour(hour) ? toNightIcon(icon) : icon;
 }
 
 /**
