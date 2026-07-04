@@ -149,7 +149,7 @@
             </div>
           </div>
           <button
-            onclick="getGeolocatedWeather()"
+            id="gps-load-button"
             class="w-full sm:w-auto bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-custom flex items-center justify-center space-x-2"
           >
             <i data-lucide="navigation" class="w-4 h-4"></i>
@@ -185,7 +185,7 @@
               位置情報の取得が許可されていないか、一時的なサーバーエラーです。
             </p>
             <button
-              onclick="tryDemoData()"
+              id="demo-data-button"
               class="text-orange-600 font-bold underline block mt-1"
             >
               デモデータ（東京・晴れの夏日）で試す
@@ -246,21 +246,18 @@
             class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold shrink-0 self-start sm:self-auto"
           >
             <button
-              onclick="changeActiveDay(0)"
               id="day-tab-0"
               class="day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm"
             >
               今日
             </button>
             <button
-              onclick="changeActiveDay(1)"
               id="day-tab-1"
               class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
             >
               明日
             </button>
             <button
-              onclick="changeActiveDay(2)"
               id="day-tab-2"
               class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
             >
@@ -328,7 +325,7 @@
           class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
         >
           <button
-            onclick="toggleAccordion('acc-logic')"
+            id="acc-logic-button"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -385,7 +382,7 @@
           class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
         >
           <button
-            onclick="toggleAccordion('acc-safety')"
+            id="acc-safety-button"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -437,7 +434,7 @@
           class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
         >
           <button
-            onclick="toggleAccordion('acc-disclaimer')"
+            id="acc-disclaimer-button"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -580,7 +577,31 @@
       }
 
       function setupEventListeners() {
+        // 日付タブ
+        for (let i = 0; i < 3; i++) {
+          const tab = document.getElementById(`day-tab-${i}`);
+          if (tab) {
+            tab.addEventListener("click", () => changeActiveDay(i));
+          }
+        }
+
+        // GPS取得・デモデータ
+        document
+          .getElementById("gps-load-button")
+          ?.addEventListener("click", getGeolocatedWeather);
+        document
+          .getElementById("demo-data-button")
+          ?.addEventListener("click", tryDemoData);
+
+        // アコーディオン
+        ["acc-logic", "acc-safety", "acc-disclaimer"].forEach((id) => {
+          document
+            .getElementById(`${id}-button`)
+            ?.addEventListener("click", () => toggleAccordion(id));
+        });
+
         if (!scrollArea) return;
+
         // マウスイベント
         scrollArea.addEventListener("mousedown", (e) =>
           handleDragStart(e.clientX),
@@ -816,10 +837,10 @@
 
           if (i === selectedDayOffset) {
             tab.className =
-              "day-tab px-4 py-2 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
+              "day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
           } else {
             tab.className =
-              "day-tab px-4 py-2 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
+              "day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
           }
         }
       }
@@ -1017,13 +1038,6 @@
 
         // 起動時に白紙画面を防ぐため、自動で東京の天気予測をロード（親切なUX設計）
         tryDemoData();
-      });
-
-      Object.assign(window, {
-        changeActiveDay,
-        getGeolocatedWeather,
-        toggleAccordion,
-        tryDemoData,
       });
     </script>
   </body>
