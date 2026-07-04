@@ -6,22 +6,16 @@ import {
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
 
-  const textContrastClass =
-    currentSurface > 25 && currentSurface <= 35
-      ? "text-slate-900"
-      : "text-white";
-  const subTextContrastClass =
-    currentSurface > 25 && currentSurface <= 35
-      ? "text-slate-750 font-semibold"
-      : "text-white/90 font-medium";
-  const iconBgContrastClass =
-    currentSurface > 25 && currentSurface <= 35
-      ? "bg-black/10 text-slate-900"
-      : "bg-white/15 text-white";
-  const iconContrastClass =
-    currentSurface > 25 && currentSurface <= 35
-      ? "text-slate-900"
-      : "text-orange-500";
+  // 25〜35℃は背景が明るい黄系なので文字色を暗くする
+  const isAttention = currentSurface > 25 && currentSurface <= 35;
+  const textContrastClass = isAttention ? "text-slate-900" : "text-white";
+  const subTextContrastClass = isAttention
+    ? "text-slate-750 font-semibold"
+    : "text-white/90 font-medium";
+  const iconBgContrastClass = isAttention
+    ? "bg-black/10 text-slate-900"
+    : "bg-white/15 text-white";
+  const iconContrastClass = isAttention ? "text-slate-900" : "text-orange-500";
   const weatherCode = current.weather_code ?? current.weathercode;
   const weatherIconName = getWeatherIcon(
     weatherCode,

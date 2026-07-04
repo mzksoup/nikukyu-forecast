@@ -31,13 +31,11 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
   return tempAir + tempRise;
 }
 
-export const calculateAdvancedSurfaceTemperature =
-  calculateVerifiedSurfaceTemperature;
-
 export function getStatusMetadata(surfaceTemp) {
   if (surfaceTemp <= 25) {
     return {
       label: "安全（お散歩に最適）",
+      shortLabel: "安全",
       colorClass: "from-emerald-500 to-teal-600",
       borderClass: "border-emerald-200",
       textClass: "text-emerald-600",
@@ -53,6 +51,7 @@ export function getStatusMetadata(surfaceTemp) {
   if (surfaceTemp <= 35) {
     return {
       label: "注意（日陰を選んで）",
+      shortLabel: "注意",
       colorClass: "from-yellow-400 to-amber-500 text-slate-900",
       borderClass: "border-yellow-300",
       textClass: "text-amber-600",
@@ -68,6 +67,7 @@ export function getStatusMetadata(surfaceTemp) {
   if (surfaceTemp <= 45) {
     return {
       label: "危険（日向は絶対NG）",
+      shortLabel: "危険",
       colorClass: "from-orange-500 to-red-500",
       borderClass: "border-orange-300",
       textClass: "text-orange-600",
@@ -82,6 +82,7 @@ export function getStatusMetadata(surfaceTemp) {
 
   return {
     label: "絶対NG（重大な火傷リスク）",
+    shortLabel: "絶対NG",
     colorClass: "from-rose-600 to-red-800",
     borderClass: "border-rose-400",
     textClass: "text-rose-600",

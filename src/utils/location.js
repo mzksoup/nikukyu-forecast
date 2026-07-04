@@ -1,56 +1,41 @@
+const MUNICIPALITY_KEYS = [
+  "city",
+  "town",
+  "village",
+  "municipality",
+  "city_district",
+  "county",
+  "suburb",
+  "hamlet",
+  "locality",
+];
+
+const PREFECTURE_KEYS = [
+  "state",
+  "region",
+  "province",
+  "state_district",
+  "prefecture",
+];
+
 export function pickMunicipalityName(address) {
-  return (
-    address?.city ||
-    address?.town ||
-    address?.village ||
-    address?.municipality ||
-    address?.city_district ||
-    address?.county ||
-    address?.suburb ||
-    address?.hamlet ||
-    address?.locality ||
-    ""
-  );
+  for (const key of MUNICIPALITY_KEYS) {
+    const value = address?.[key];
+    if (value) return value;
+  }
+  return "";
 }
 
-export function pickPrefectureName(address, displayName = "") {
-  const prefecture =
-    address?.state ||
-    address?.region ||
-    address?.province ||
-    address?.state_district ||
-    address?.prefecture ||
-    "";
-
-  if (prefecture) {
-    return prefecture;
+export function pickPrefectureName(address) {
+  for (const key of PREFECTURE_KEYS) {
+    const value = address?.[key];
+    if (value) return value;
   }
-
-  if (typeof displayName !== "string" || !displayName.trim()) {
-    return "";
-  }
-
-  const municipality = pickMunicipalityName(address);
-  const segments = displayName
-    .split(",")
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-
-  if (municipality) {
-    const municipalityIndex = segments.indexOf(municipality);
-    if (municipalityIndex >= 0) {
-      const candidate = segments[municipalityIndex + 1];
-      if (candidate && /[都道府県]$/.test(candidate)) {
-        return candidate;
-      }
-    }
-  }
-
-  return segments.find((segment) => /[都道府県]$/.test(segment)) || "";
+  return "";
 }
 
-export function formatMunicipalityLabel(address, displayName = "") {
-  const prefecture = pickPrefectureName(address, displayName);
+export function formatMunicipalityLabel(address) {
+  const prefecture = pickPrefectureName(address);
   const municipality = pickMunicipalityName(address);
 
   if (prefecture && municipality) {

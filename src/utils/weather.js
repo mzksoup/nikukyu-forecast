@@ -1,5 +1,20 @@
 const METEOCONS_CDN_BASE = "https://cdn.meteocons.com/3.0.0-next.10/svg/fill";
 
+const ICON_LABELS = {
+  "clear-day": "晴れ",
+  "overcast-day": "曇り",
+  "fog-day": "霧",
+  rain: "雨",
+  "partly-cloudy-day-rain": "小雨",
+  "thunderstorms-day-rain": "雷雨",
+  snow: "雪",
+};
+
+const SNOW_CODES = [71, 73, 75, 77, 85, 86];
+const STORM_CODES = [95, 96, 99];
+const DRIZZLE_CODES = [51, 53, 55, 56, 57];
+const RAIN_CODES = [61, 63, 65, 66, 67, 80, 81, 82];
+
 function normalizeNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -15,34 +30,7 @@ function getPrecipitationLabel(mm) {
 }
 
 function getWeatherLabelFromIcon(iconName) {
-  switch (iconName) {
-    case "clear-day":
-      return "晴れ";
-    case "overcast-day":
-      return "曇り";
-    case "fog-day":
-      return "霧";
-    case "rain":
-      return "雨";
-    case "partly-cloudy-day-rain":
-      return "小雨";
-    case "thunderstorms-day-rain":
-      return "雷雨";
-    case "snow":
-      return "雪";
-    default:
-      return "";
-  }
-}
-
-/**
- * 降水量(mm/h)を日本語ラベルに変換する
- * @param {number} mm - 時間降水量 (mm/h)
- * @param {number} [code] - WMO weathercode
- * @returns {{ label: string, meteoconsName: string|null }}
- */
-export function getRainLabel(mm, code) {
-  return getWeatherLabel(mm, code);
+  return ICON_LABELS[iconName] || "";
 }
 
 /**
@@ -81,67 +69,24 @@ export function getWeatherLabel(mm, code) {
  * @returns {string|null}
  */
 export function getWeatherIcon(code, precipitation = 0) {
+  const wmo = normalizeNumber(code);
   const precipitationAmount = normalizeNumber(precipitation);
+
+  // Snow/thunder WMO codes take precedence even when precipitation > 0.
+  if (wmo != null && SNOW_CODES.includes(wmo)) return "snow";
+  if (wmo != null && STORM_CODES.includes(wmo)) return "thunderstorms-day-rain";
+
   if (precipitationAmount != null && precipitationAmount > 0) {
-    const wmo = normalizeNumber(code);
-    // Snow/thunder WMO codes should take precedence even when precipitation > 0.
-    if (
-      wmo === 71 ||
-      wmo === 73 ||
-      wmo === 75 ||
-      wmo === 77 ||
-      wmo === 85 ||
-      wmo === 86
-    )
-      return "snow";
-    if (wmo === 95 || wmo === 96 || wmo === 99) return "thunderstorms-day-rain";
     if (precipitationAmount >= 20) return "thunderstorms-day-rain";
     if (precipitationAmount >= 1) return "rain";
     return "partly-cloudy-day-rain";
   }
 
-  const weatherCode = normalizeNumber(code);
-  if (weatherCode == null) return "overcast-day";
-
-  if (weatherCode === 0) return "clear-day";
-  if (weatherCode === 1 || weatherCode === 2 || weatherCode === 3) {
-    return "overcast-day";
-  }
-  if (weatherCode === 45 || weatherCode === 48) return "fog-day";
-  if (
-    weatherCode === 51 ||
-    weatherCode === 53 ||
-    weatherCode === 55 ||
-    weatherCode === 56 ||
-    weatherCode === 57
-  ) {
-    return "rain";
-  }
-  if (
-    weatherCode === 61 ||
-    weatherCode === 63 ||
-    weatherCode === 65 ||
-    weatherCode === 66 ||
-    weatherCode === 67 ||
-    weatherCode === 80 ||
-    weatherCode === 81 ||
-    weatherCode === 82
-  ) {
-    return "rain";
-  }
-  if (
-    weatherCode === 71 ||
-    weatherCode === 73 ||
-    weatherCode === 75 ||
-    weatherCode === 77 ||
-    weatherCode === 85 ||
-    weatherCode === 86
-  ) {
-    return "snow";
-  }
-  if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) {
-    return "thunderstorms-day-rain";
-  }
+  if (wmo == null) return "overcast-day";
+  if (wmo === 0) return "clear-day";
+  if (wmo === 1 || wmo === 2 || wmo === 3) return "overcast-day";
+  if (wmo === 45 || wmo === 48) return "fog-day";
+  if (DRIZZLE_CODES.includes(wmo) || RAIN_CODES.includes(wmo)) return "rain";
 
   return "overcast-day";
 }
