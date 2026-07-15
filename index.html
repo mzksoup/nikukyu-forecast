@@ -31,6 +31,17 @@
       content="https://nikukyu-forecast.vercel.app/ogp.png"
     />
     <meta property="og:url" content="https://nikukyu-forecast.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="にくきゅう天気予報" />
+    <meta
+      name="twitter:description"
+      content="犬の散歩前に確認。現在地のアスファルト路面温度を予測し、肉球への危険度をリアルタイム表示"
+    />
+    <meta
+      name="twitter:image"
+      content="https://nikukyu-forecast.vercel.app/ogp.png"
+    />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -39,6 +50,38 @@
         "description": "犬の散歩前に確認。現在地のアスファルト路面温度を予測し、肉球への危険度をリアルタイム表示。",
         "url": "https://nikukyu-forecast.vercel.app/",
         "applicationCategory": "LifestyleApplication"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "予測温度はどれくらい正確ですか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "本サービスが提供する路面予測温度は、Open-Meteoが提供する広域気象データに基づく理論計算値です。実際のアスファルト温度は、周囲の建物の影や樹木、路面の材質・乾燥状態などのマイクロクライメイト（局所気候）により、予測値と大きく異なる場合があります。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "GPSを許可しないと使えませんか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GPSの許可がない場合やGPSが使えない環境でも、IPアドレスベースの位置推定に自動的に切り替わり、予測を表示します。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "危険度はどうやって判定していますか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "気温・日射量・風速から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。"
+            }
+          }
+        ]
       }
     </script>
 
@@ -469,6 +512,61 @@
             </p>
           </div>
         </div>
+
+        <!-- アコーディオン4: よくある質問 -->
+        <div
+          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <button
+            id="acc-faq-button"
+            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+          >
+            <span class="flex items-center gap-2">
+              <i
+                data-lucide="help-circle"
+                class="w-4 h-4 text-slate-500"
+              ></i>
+              よくある質問
+            </span>
+            <i
+              data-lucide="chevron-down"
+              id="acc-faq-icon"
+              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+            ></i>
+          </button>
+          <div
+            id="acc-faq-content"
+            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+          >
+            <div>
+              <p class="font-bold text-slate-700">
+                Q. 予測温度はどれくらい正確ですか？
+              </p>
+              <p>
+                A.
+                本サービスが提供する路面予測温度は、Open-Meteoが提供する広域気象データに基づく理論計算値です。実際のアスファルト温度は、周囲の建物の影や樹木、路面の材質・乾燥状態などのマイクロクライメイト（局所気候）により、予測値と大きく異なる場合があります。
+              </p>
+            </div>
+            <div>
+              <p class="font-bold text-slate-700">
+                Q. GPSを許可しないと使えませんか？
+              </p>
+              <p>
+                A.
+                GPSの許可がない場合やGPSが使えない環境でも、IPアドレスベースの位置推定に自動的に切り替わり、予測を表示します。
+              </p>
+            </div>
+            <div>
+              <p class="font-bold text-slate-700">
+                Q. 危険度はどうやって判定していますか？
+              </p>
+              <p>
+                A.
+                気温・日射量・風速から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -594,7 +692,7 @@
           ?.addEventListener("click", tryDemoData);
 
         // アコーディオン
-        ["acc-logic", "acc-safety", "acc-disclaimer"].forEach((id) => {
+        ["acc-logic", "acc-safety", "acc-disclaimer", "acc-faq"].forEach((id) => {
           document
             .getElementById(`${id}-button`)
             ?.addEventListener("click", () => toggleAccordion(id));
