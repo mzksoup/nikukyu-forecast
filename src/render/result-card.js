@@ -40,8 +40,8 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
       <div class="flex items-center justify-between">
         <span class="text-[10px] font-black tracking-wider bg-black/10 px-3 py-1.5 rounded-full uppercase">現在のお散歩コンディション</span>
         <div class="flex items-center space-x-1.5 text-xs font-bold bg-black/10 px-2.5 py-1 rounded-lg">
-          <i data-lucide="wind" class="w-3.5 h-3.5"></i>
-          <span>風速: ${current.wind_speed_10m.toFixed(1)} m/s</span>
+          <i data-lucide="thermometer" class="w-3.5 h-3.5"></i>
+          <span>周辺気温: ${current.temperature_2m.toFixed(1)} ℃</span>
         </div>
       </div>
 
@@ -63,20 +63,20 @@ export function renderResultCard(resultCard, current, currentSurface, meta) {
       </div>
 
       <div class="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-black/10 text-xs text-center">
-        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
-          <span class="text-[10px] block opacity-60">周辺気温</span>
-          <span class="font-bold text-sm leading-none mt-2">${current.temperature_2m.toFixed(1)} ℃</span>
-        </div>
-        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
-          <span class="text-[10px] block opacity-60">日射エネルギー</span>
-          <span class="font-bold text-sm leading-none mt-2">${current.shortwave_radiation.toFixed(0)} W/m²</span>
-        </div>
         <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex items-center justify-center">
           <div class="flex items-center justify-center gap-2">
             <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
               ${getMeteoconsImgTag(weatherIconName, 48)}
             </div>
           </div>
+        </div>
+        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
+          <span class="text-[10px] block opacity-60">日射エネルギー</span>
+          <span class="font-bold text-sm leading-none mt-2">${current.shortwave_radiation.toFixed(0)} W/m²</span>
+        </div>
+        <div class="bg-black/5 p-3 rounded-xl min-h-[84px] flex flex-col justify-center items-center">
+          <span class="text-[10px] block opacity-60">風速</span>
+          <span class="font-bold text-sm leading-none mt-2">${current.wind_speed_10m.toFixed(1)} m/s</span>
         </div>
       </div>
     </div>
