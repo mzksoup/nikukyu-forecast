@@ -878,6 +878,7 @@
           current.temperature_2m,
           current.shortwave_radiation,
           current.wind_speed_10m,
+          current.precipitation,
         );
         const meta = getStatusMetadata(currentSurface);
 
@@ -992,6 +993,7 @@
             temp,
             rad,
             wind,
+            precipitation,
           );
           const weatherIcon = getWeatherIcon(weathercode, precipitation, hour);
           const weatherLabel = getWeatherLabel(precipitation, weathercode);
