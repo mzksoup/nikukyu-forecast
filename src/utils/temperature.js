@@ -3,12 +3,14 @@
  * @param {number|string} Ta 気温 (℃)
  * @param {number|string} Rs 日射量 (W/m²)
  * @param {number|string} U 風速 (m/s)
+ * @param {number|string} [P=0] 降水量 (mm/h)
  * @returns {number} 推定路面温度 (℃)
  */
-export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
+export function calculateVerifiedSurfaceTemperature(Ta, Rs, U, P = 0) {
   const tempAir = Number(Ta);
   const solarRad = Number(Rs);
   const windSpeed = Number(U);
+  const precipitation = Math.max(0, Number(P) || 0);
 
   // 1. 日射による純吸収エネルギー (アスファルトの吸収率0.85)
   const absorbedSolar = solarRad * 0.85;
@@ -28,7 +30,13 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U) {
   // 5. 最終推定温度の計算
   const tempRise = (effectiveHeat / heatTransferCoeff) - longwaveCooling;
 
-  return tempAir + tempRise;
+  // 6. 降水による冷却抑制（蒸発潜熱・水膜で路面が外気温に近づく）
+  // ponytail: 降水強度と抑制率の線形関係は簡易近似。20mm/h（getWeatherIconの
+  // 「激しい雨」しきい値と同じ）で温度上昇分をほぼ相殺し、外気温に収束させる。
+  const precipitationDampening = Math.min(precipitation / 20, 1);
+  const dampedTempRise = tempRise * (1 - precipitationDampening);
+
+  return tempAir + dampedTempRise;
 }
 
 export function getStatusMetadata(surfaceTemp) {

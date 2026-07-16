@@ -78,7 +78,7 @@
             "name": "危険度はどうやって判定していますか？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "気温・日射量・風速から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。"
+              "text": "気温・日射量・風速・降水量から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。"
             }
           }
         ]
@@ -386,7 +386,7 @@
             class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
           >
             <p>
-              アスファルトの表面温度は、気温に加えて日射吸収と風による冷却の影響を受けます。本アプリでは<strong>相当外気温度モデル</strong>を使い、気温・日射量・風速から推定しています。
+              アスファルトの表面温度は、気温に加えて日射吸収と風による冷却、降水による濡れの影響を受けます。本アプリでは<strong>相当外気温度モデル</strong>を使い、気温・日射量・風速・降水量から推定しています。
             </p>
             <div
               class="p-3 bg-slate-50 rounded-xl font-mono text-[11px] text-slate-700 space-y-1"
@@ -405,6 +405,10 @@
               <p>
                 ・放射冷却（長波放射）:
                 常に空へ逃げていく熱損失（約100W/m²）を計算に含め、夜間や日陰の冷え込みも考慮
+              </p>
+              <p>
+                ・降水による冷却抑制:
+                路面が濡れることによる蒸発潜熱・水膜の効果を降水量(mm/h)に応じて反映し、激しい雨（20mm/h以上）ではほぼ気温相当まで低下
               </p>
             </div>
             <p class="text-[10px] text-slate-400">
@@ -562,7 +566,7 @@
               </p>
               <p>
                 A.
-                気温・日射量・風速から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。
+                気温・日射量・風速・降水量から算出した路面予測温度をもとに、3段階以上の危険度で判定しています。散歩前には、飼い主自身の手の甲をアスファルトに5秒間押し当てる「5秒ルール」による物理的チェックの併用を推奨しています。
               </p>
             </div>
           </div>
@@ -878,6 +882,7 @@
           current.temperature_2m,
           current.shortwave_radiation,
           current.wind_speed_10m,
+          current.precipitation,
         );
         const meta = getStatusMetadata(currentSurface);
 
@@ -992,6 +997,7 @@
             temp,
             rad,
             wind,
+            precipitation,
           );
           const weatherIcon = getWeatherIcon(weathercode, precipitation, hour);
           const weatherLabel = getWeatherLabel(precipitation, weathercode);
