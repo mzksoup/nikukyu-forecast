@@ -1000,7 +1000,7 @@
             precipitation,
           );
           const weatherIcon = getWeatherIcon(weathercode, precipitation, hour);
-          const weatherLabel = getWeatherLabel(precipitation, weathercode);
+          const weatherLabel = getWeatherLabel(precipitation, weathercode, hour);
 
           dayDataPoints.push({
             timeStr,

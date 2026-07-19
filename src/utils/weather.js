@@ -4,6 +4,7 @@ const ICON_LABELS = {
   "clear-day": "晴れ",
   "clear-night": "晴れ",
   "overcast-day": "曇り",
+  "overcast-night": "曇り",
   "fog-day": "霧",
   "fog-night": "霧",
   rain: "雨",
@@ -17,6 +18,7 @@ const ICON_LABELS = {
 /** day→night のマッピング。夜(18〜6時)なら夜用に差し替え */
 const NIGHT_ICON_MAP = {
   "clear-day": "clear-night",
+  "overcast-day": "overcast-night",
   "fog-day": "fog-night",
   "partly-cloudy-day-rain": "partly-cloudy-night-rain",
   "thunderstorms-day-rain": "thunderstorms-night-rain",
@@ -59,11 +61,12 @@ function toNightIcon(iconName) {
  * 天気条件を日本語ラベルに変換する
  * @param {number} mm - 時間降水量 (mm/h)
  * @param {number} [code] - WMO weathercode
+ * @param {number} [hour=12] - 時刻(0-23)。夜間(18-6)は夜用ラベルに差し替え
  * @returns {{ label: string, meteoconsName: string|null }}
  */
-export function getWeatherLabel(mm, code) {
+export function getWeatherLabel(mm, code, hour = 12) {
   const precipitation = normalizeNumber(mm);
-  const iconName = getWeatherIcon(code, precipitation ?? 0);
+  const iconName = getWeatherIcon(code, precipitation ?? 0, hour);
 
   // If WMO code maps to a specific icon (e.g. snow/thunder), prefer that label.
   if (iconName === "snow" || iconName === "thunderstorms-day-rain") {
