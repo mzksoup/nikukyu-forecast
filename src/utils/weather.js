@@ -4,6 +4,7 @@ const ICON_LABELS = {
   "clear-day": "晴れ",
   "clear-night": "晴れ",
   "overcast-day": "曇り",
+  "overcast-night": "曇り",
   "fog-day": "霧",
   "fog-night": "霧",
   rain: "雨",
@@ -17,6 +18,7 @@ const ICON_LABELS = {
 /** day→night のマッピング。夜(18〜6時)なら夜用に差し替え */
 const NIGHT_ICON_MAP = {
   "clear-day": "clear-night",
+  "overcast-day": "overcast-night",
   "fog-day": "fog-night",
   "partly-cloudy-day-rain": "partly-cloudy-night-rain",
   "thunderstorms-day-rain": "thunderstorms-night-rain",
