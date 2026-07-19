@@ -14,6 +14,7 @@ test("WMOコード1(晴れ時々曇り)は昼間(12時)は従来通り昼用ア�
 });
 
 test("夜の曇りアイコンにも日本語ラベルがつく", () => {
-  const { label } = getWeatherLabel(0, 3);
+  const { label, meteoconsName } = getWeatherLabel(0, 3, 20);
+  assert.equal(meteoconsName, "overcast-night");
   assert.notEqual(label, "");
 });
