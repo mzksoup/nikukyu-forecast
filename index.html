@@ -966,6 +966,7 @@
         if (!weatherForecastData) return;
 
         const hourly = weatherForecastData.hourly;
+        const current = weatherForecastData.current;
         const renderToken = ++graphRenderToken;
         const currentDayOffset = getCurrentForecastDayOffset();
         if (selectedDayOffset <= currentDayOffset) {
@@ -987,12 +988,17 @@
           const timeStr = hourly.time[idx];
           const dateObj = new Date(timeStr);
           const hour = dateObj.getHours();
-          const temp = hourly.temperature_2m[idx];
-          const rad = hourly.shortwave_radiation[idx];
-          const wind = hourly.wind_speed_10m[idx];
-          const precipitation = hourly.precipitation?.[idx] ?? 0;
-          const weathercode =
-            hourly.weather_code?.[idx] ?? hourly.weathercode?.[idx] ?? null;
+          // 「現在」セルは正時の予報値でなく、上部カードと同じcurrent(実測)値を使い、両者の表示を一致させる
+          const isNowCell = isCurrentDayView && hour === currentHourVal;
+          const temp = isNowCell ? current.temperature_2m : hourly.temperature_2m[idx];
+          const rad = isNowCell ? current.shortwave_radiation : hourly.shortwave_radiation[idx];
+          const wind = isNowCell ? current.wind_speed_10m : hourly.wind_speed_10m[idx];
+          const precipitation = isNowCell
+            ? (current.precipitation ?? 0)
+            : (hourly.precipitation?.[idx] ?? 0);
+          const weathercode = isNowCell
+            ? (current.weather_code ?? current.weathercode ?? null)
+            : (hourly.weather_code?.[idx] ?? hourly.weathercode?.[idx] ?? null);
           const calculatedTs = calculateVerifiedSurfaceTemperature(
             temp,
             rad,
