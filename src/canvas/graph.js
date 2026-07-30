@@ -92,6 +92,7 @@ export async function drawCanvasGraph({
   ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
   ctx.lineWidth = 1;
   ctx.font = "bold 9px sans-serif";
+  ctx.textAlign = "left";
   const tickLabelBoxes = [0, 10, 20, 30, 40, 50, 60].map((t) => {
     const y = getCanvasY(t);
     ctx.beginPath();
