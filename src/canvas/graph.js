@@ -91,16 +91,20 @@ export async function drawCanvasGraph({
 
   ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
   ctx.lineWidth = 1;
-  [0, 10, 20, 30, 40, 50, 60].forEach((t) => {
+  ctx.font = "bold 9px sans-serif";
+  ctx.textAlign = "left";
+  const tickLabelBoxes = [0, 10, 20, 30, 40, 50, 60].map((t) => {
     const y = getCanvasY(t);
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(maxScrollWidth, y);
     ctx.stroke();
 
+    const text = `${t}℃`;
+    const width = ctx.measureText(text).width;
     ctx.fillStyle = "rgba(100, 116, 139, 0.7)";
-    ctx.font = "bold 9px sans-serif";
-    ctx.fillText(`${t}℃`, 8, y - 4);
+    ctx.fillText(text, 8, y - 4);
+    return { left: 8, right: 8 + width, top: y - 4 - 8, bottom: y - 4 + 3 };
   });
 
   for (let i = 0; i < dataPoints.length; i++) {
@@ -179,9 +183,21 @@ export async function drawCanvasGraph({
     ctx.arc(x, y, 2.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "rgba(15, 23, 42, 1)";
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`${dp.surfaceTemp.toFixed(1)}°`, x, y - 10);
+    const label = `${dp.surfaceTemp.toFixed(1)}°`;
+    const labelWidth = ctx.measureText(label).width;
+    const above = { top: y - 10 - 8, bottom: y - 10 + 3 };
+    const box = { left: x - labelWidth / 2, right: x + labelWidth / 2 };
+    const collidesAbove = tickLabelBoxes.some(
+      (tick) =>
+        box.left < tick.right &&
+        box.right > tick.left &&
+        above.top < tick.bottom &&
+        above.bottom > tick.top,
+    );
+    const labelY = collidesAbove ? y + 18 : y - 10;
+    ctx.fillStyle = "rgba(15, 23, 42, 1)";
+    ctx.fillText(label, x, labelY);
   }
 }
