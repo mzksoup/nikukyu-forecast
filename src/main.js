@@ -17,6 +17,7 @@ import { fetchWeatherForecast } from "./services/weather.js";
 import { renderResultCard } from "./render/result-card.js";
 import { renderHourlyGraphDetails } from "./render/timeline.js";
 import { drawCanvasGraph } from "./canvas/graph.js";
+import { snapScrollOffset } from "./utils/scroll.js";
 
 // グローバルデータ保持
 let weatherForecastData = null;
@@ -509,25 +510,11 @@ function handleDragEnd() {
   scrollArea.style.transition =
     "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)";
 
-  const minScroll = getMinScroll();
-  if (scrollLeftOffset > 0) {
-    scrollLeftOffset = 0;
-  } else if (scrollLeftOffset < minScroll) {
-    scrollLeftOffset = minScroll;
-  }
-
-  const itemSnappedIndex = Math.round(
-    Math.abs(scrollLeftOffset) / hourStepWidth,
+  scrollLeftOffset = snapScrollOffset(
+    scrollLeftOffset,
+    getMinScroll(),
+    hourStepWidth,
   );
-  scrollLeftOffset = -(itemSnappedIndex * hourStepWidth);
-
-  if (scrollLeftOffset > 0) scrollLeftOffset = 0;
-  if (scrollLeftOffset < minScroll) scrollLeftOffset = minScroll;
-  // minScrollはhourStepWidthの倍数とは限らないため、丸め後も端まで届かず
-  // 最後の列が半端に切れて止まることがある。端に近ければ端まで詰める。
-  if (scrollLeftOffset - minScroll <= hourStepWidth) {
-    scrollLeftOffset = minScroll;
-  }
 
   scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
 }
