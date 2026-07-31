@@ -78,6 +78,35 @@ test("深夜0時台のように気温がY軸目盛りに近くても目盛りラ
   );
 });
 
+test("0時台の気温が目盛りの少し上(21.8度など)でも、下に逃がした先の別の目盛りと重ならない", async () => {
+  const ctx = makeCtx();
+  const dataPoints = [
+    { hour: 0, surfaceTemp: 21.8, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+    { hour: 1, surfaceTemp: 21.1, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+  ];
+
+  await drawCanvasGraph({
+    ctx,
+    dataPoints,
+    currentHourVal: 0,
+    highlightCurrent: false,
+    maxScrollWidth: 1200,
+    canvasHeight: 200,
+    hourStepWidth: 70,
+    graphPaddingLeft: 30,
+  });
+
+  const dataLabel = ctx.__textBoxes.find((b) => b.text === "21.8°");
+  assert.ok(dataLabel, "21.8°のデータラベルが描画されること");
+  for (const t of [0, 10, 20, 30, 40, 50, 60]) {
+    const tickLabel = ctx.__textBoxes.find((b) => b.text === `${t}℃`);
+    assert.ok(
+      !boxesIntersect(tickLabel, dataLabel),
+      `21.8°のデータラベルが${t}℃の目盛りラベルと重ならないこと`,
+    );
+  }
+});
+
 test("同じctxで2回描画しても(前回のtextAlignが残っても)目盛りラベルとデータラベルが重ならない", async () => {
   const ctx = makeCtx();
   const dataPoints = [

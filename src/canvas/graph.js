@@ -167,6 +167,8 @@ export async function drawCanvasGraph({
   }
   ctx.stroke();
 
+  const tickColumnRight = Math.max(...tickLabelBoxes.map((tick) => tick.right));
+
   for (let i = 0; i < dataPoints.length; i++) {
     if (shouldAbort()) return;
     const dp = dataPoints[i];
@@ -184,20 +186,27 @@ export async function drawCanvasGraph({
     ctx.fill();
 
     ctx.font = "bold 10px sans-serif";
-    ctx.textAlign = "center";
     const label = `${dp.surfaceTemp.toFixed(1)}°`;
     const labelWidth = ctx.measureText(label).width;
-    const above = { top: y - 10 - 8, bottom: y - 10 + 3 };
-    const box = { left: x - labelWidth / 2, right: x + labelWidth / 2 };
-    const collidesAbove = tickLabelBoxes.some(
-      (tick) =>
-        box.left < tick.right &&
-        box.right > tick.left &&
-        above.top < tick.bottom &&
-        above.bottom > tick.top,
-    );
-    const labelY = collidesAbove ? y + 18 : y - 10;
     ctx.fillStyle = "rgba(15, 23, 42, 1)";
-    ctx.fillText(label, x, labelY);
+
+    if (x - labelWidth / 2 < tickColumnRight) {
+      // 最初の点は目盛りラベル欄に近く、上下どちらに置いても重なるため点の右側に表示する
+      ctx.textAlign = "left";
+      ctx.fillText(label, x + 9, y + 3);
+    } else {
+      ctx.textAlign = "center";
+      const above = { top: y - 10 - 8, bottom: y - 10 + 3 };
+      const box = { left: x - labelWidth / 2, right: x + labelWidth / 2 };
+      const collidesAbove = tickLabelBoxes.some(
+        (tick) =>
+          box.left < tick.right &&
+          box.right > tick.left &&
+          above.top < tick.bottom &&
+          above.bottom > tick.top,
+      );
+      const labelY = collidesAbove ? y + 18 : y - 10;
+      ctx.fillText(label, x, labelY);
+    }
   }
 }
