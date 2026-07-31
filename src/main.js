@@ -33,6 +33,7 @@ let scrollLeftOffset = 0; // 現在のスクロール量
 let maxScrollWidth = 1200; // 24時間の幅合計
 let viewportWidth = 0;
 let daySyncTimer = null;
+let lastKnownCurrentOffset = 0; // 前回tick時点のcurrentOffset(変化検知用)
 
 // グラフエリア（Canvasサイズ設定）
 const canvasHeight = CANVAS_HEIGHT;
@@ -78,6 +79,13 @@ function startDaySyncTimer() {
     if (!weatherForecastData) return;
 
     const currentOffset = getCurrentForecastDayOffset();
+    // currentOffsetが変化した(日付が繰り上がった)ときだけ処理する。
+    // 変化なしでも毎tick再描画すると、selectedDayOffset===currentOffsetの
+    // 通常状態(本日タブを見ている間)で10秒ごとに無駄な再描画が走り、
+    // ユーザーがドラッグしたスクロール位置が現在時刻へ戻されてしまう。
+    if (currentOffset === lastKnownCurrentOffset) return;
+    lastKnownCurrentOffset = currentOffset;
+
     if (selectedDayOffset <= currentOffset) {
       selectedDayOffset = currentOffset;
       renderActiveDayTimelineAndGraph();
