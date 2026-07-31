@@ -598,7 +598,7 @@
         HOUR_STEP_WIDTH,
       } from "./src/constants.js";
       import { getJstDateParts, getJstHour } from "./src/utils/date.js";
-      import { getWeatherIcon, getWeatherLabel } from "./src/utils/weather.js";
+      import { getWeatherLabel } from "./src/utils/weather.js";
       import {
         calculateVerifiedSurfaceTemperature,
         getStatusMetadata,
@@ -1005,12 +1005,9 @@
             wind,
             precipitation,
           );
-          const weatherIcon = getWeatherIcon(weathercode, precipitation, hour);
           const weatherLabel = getWeatherLabel(precipitation, weathercode, hour);
 
           dayDataPoints.push({
-            timeStr,
-            dateKey: timeStr.slice(0, 10),
             hour,
             temp,
             rad,
@@ -1019,7 +1016,6 @@
             weathercode,
             surfaceTemp: calculatedTs,
             meta: getStatusMetadata(calculatedTs),
-            weatherIcon,
             weatherLabel: weatherLabel.label,
           });
 
@@ -1077,7 +1073,6 @@
 
       // --- ドラッグ ＆ スワイプ操作用インタラクション設計 ---
       let startClientX = 0;
-      let isMoving = false;
 
       function handleDragStart(clientX) {
         if (!scrollArea) return;
@@ -1102,7 +1097,6 @@
 
         scrollLeftOffset = targetX;
         scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
-        isMoving = true;
       }
 
       // 滑らかなスナップ補正
