@@ -902,7 +902,7 @@
         if (!outerContainer || !canvas) return;
 
         viewportWidth = outerContainer.clientWidth;
-        maxScrollWidth = graphPaddingLeft + 23 * hourStepWidth + graphPaddingLeft;
+        maxScrollWidth = 2 * graphPaddingLeft + 23 * hourStepWidth;
 
         // 高DPI(Retina)ディスプレイ対応: Canvasのにじみを除去するスケーリング
         const dpr = window.devicePixelRatio || 1;

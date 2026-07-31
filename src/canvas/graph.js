@@ -195,18 +195,10 @@ export async function drawCanvasGraph({
       ctx.textAlign = "left";
       ctx.fillText(label, x + 9, y + 3);
     } else {
+      // box.left(x - labelWidth/2) >= tickColumnRight が保証されるため、
+      // どの目盛りラベルとも重ならない(衝突判定は不要)
       ctx.textAlign = "center";
-      const above = { top: y - 10 - 8, bottom: y - 10 + 3 };
-      const box = { left: x - labelWidth / 2, right: x + labelWidth / 2 };
-      const collidesAbove = tickLabelBoxes.some(
-        (tick) =>
-          box.left < tick.right &&
-          box.right > tick.left &&
-          above.top < tick.bottom &&
-          above.bottom > tick.top,
-      );
-      const labelY = collidesAbove ? y + 18 : y - 10;
-      ctx.fillText(label, x, labelY);
+      ctx.fillText(label, x, y - 10);
     }
   }
 }
