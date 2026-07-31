@@ -2,13 +2,7 @@ import {
   getMeteoconsImgTag,
   getWeatherIcon,
 } from "../utils/weather.js";
-
-function getJstHour() {
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Tokyo", hour: "2-digit", hour12: false,
-  });
-  return Number(formatter.format(new Date()));
-}
+import { getJstHour } from "../utils/date.js";
 
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
