@@ -1,3 +1,9 @@
+import {
+  SURFACE_TEMP_SAFE_MAX,
+  SURFACE_TEMP_CAUTION_MAX,
+  SURFACE_TEMP_DANGER_MAX,
+} from "../constants.js";
+
 /**
  * アスファルト路面温度推定（地表面熱収支モデル準拠）
  * @param {number|string} Ta 気温 (℃)
@@ -40,7 +46,7 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U, P = 0) {
 }
 
 export function getStatusMetadata(surfaceTemp) {
-  if (surfaceTemp <= 25) {
+  if (surfaceTemp <= SURFACE_TEMP_SAFE_MAX) {
     return {
       label: "安全（お散歩に最適）",
       shortLabel: "安全",
@@ -56,7 +62,7 @@ export function getStatusMetadata(surfaceTemp) {
     };
   }
 
-  if (surfaceTemp <= 35) {
+  if (surfaceTemp <= SURFACE_TEMP_CAUTION_MAX) {
     return {
       label: "注意（日陰を選んで）",
       shortLabel: "注意",
@@ -72,7 +78,7 @@ export function getStatusMetadata(surfaceTemp) {
     };
   }
 
-  if (surfaceTemp <= 45) {
+  if (surfaceTemp <= SURFACE_TEMP_DANGER_MAX) {
     return {
       label: "危険（日向は絶対NG）",
       shortLabel: "危険",

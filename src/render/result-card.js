@@ -3,12 +3,18 @@ import {
   getWeatherIcon,
 } from "../utils/weather.js";
 import { getJstHour } from "../utils/date.js";
+import {
+  SURFACE_TEMP_SAFE_MAX,
+  SURFACE_TEMP_CAUTION_MAX,
+} from "../constants.js";
 
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
 
-  // 25〜35℃は背景が明るい黄系なので文字色を暗くする
-  const isAttention = currentSurface > 25 && currentSurface <= 35;
+  // 25〜35℃(注意帯)は背景が明るい黄系なので文字色を暗くする
+  const isAttention =
+    currentSurface > SURFACE_TEMP_SAFE_MAX &&
+    currentSurface <= SURFACE_TEMP_CAUTION_MAX;
   const textContrastClass = isAttention ? "text-slate-900" : "text-white";
   const subTextContrastClass = isAttention
     ? "text-slate-750 font-semibold"
