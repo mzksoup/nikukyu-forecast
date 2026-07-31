@@ -29,11 +29,18 @@ Open-Meteoの気象データと位置情報を使って、現在地周辺の路�
 
 ## 主要ファイル
 
-- `index.html` - 画面本体とアプリ起点
+- `index.html` - 画面本体(マークアップ)
+- `src/main.js` - アプリ起点(位置情報取得・API呼び出し・ドラッグ操作などの制御)
 - `src/services/` - 位置情報・天気API取得
 - `src/render/` - カードやタイムライン描画
 - `src/utils/` - 日時・温度・位置ラベルの計算
 - `src/canvas/` - グラフ描画
+
+## テスト
+
+```bash
+npm test
+```
 
 ## 注意
 

@@ -1,22 +1,26 @@
-export function renderHourlyGraphDetails(
-  container,
-  timelineDisplayPoints,
-  isCurrentDayView,
-) {
+import { GRAPH_PADDING_LEFT, HOUR_STEP_WIDTH } from "../constants.js";
+
+export function renderHourlyGraphDetails(container, timelineDisplayPoints) {
   if (!container) return;
 
   container.innerHTML = "";
 
+  // カード中心をcanvas側の点の位置(GRAPH_PADDING_LEFT + i*HOUR_STEP_WIDTH)に合わせる
+  const halfStep = HOUR_STEP_WIDTH / 2;
+  const leftOffset = GRAPH_PADDING_LEFT - halfStep;
+
   const strip = document.createElement("div");
-  strip.className = "flex items-stretch pr-[35px]";
-  strip.style.width = `${timelineDisplayPoints.length * 70 + 35}px`;
-  strip.style.marginLeft = "-5px";
+  strip.className = "flex items-stretch";
+  strip.style.width = `${timelineDisplayPoints.length * HOUR_STEP_WIDTH + halfStep}px`;
+  strip.style.marginLeft = `${leftOffset}px`;
+  strip.style.paddingRight = `${halfStep}px`;
 
   timelineDisplayPoints.forEach((dp) => {
     const isCurrent = Boolean(dp.isCurrent);
     const isCurrentClass = isCurrent ? "bg-[rgba(249,115,22,0.08)]" : "bg-transparent";
     const card = document.createElement("div");
-    card.className = `w-[70px] shrink-0 px-1.5 py-2 transition-custom ${isCurrentClass}`;
+    card.className = `shrink-0 px-1.5 py-2 transition-custom ${isCurrentClass}`;
+    card.style.width = `${HOUR_STEP_WIDTH}px`;
     card.innerHTML = `
       <div class="space-y-1.5 text-center ${isCurrent ? "text-orange-700" : ""}">
         <div class="flex items-center justify-center gap-1.5">

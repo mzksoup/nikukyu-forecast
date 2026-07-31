@@ -1,4 +1,9 @@
 import { getWeatherIcon } from "../utils/weather.js";
+import {
+  SURFACE_TEMP_SAFE_MAX,
+  SURFACE_TEMP_CAUTION_MAX,
+  SURFACE_TEMP_DANGER_MAX,
+} from "../constants.js";
 
 const METEOCONS_CDN_BASE = "https://cdn.meteocons.com/3.0.0-next.10/svg/fill";
 const meteoconsIconCache = new Map();
@@ -68,26 +73,26 @@ export async function drawCanvasGraph({
   ctx.fillStyle = bandColors[0];
   ctx.fillRect(
     0,
-    getCanvasY(25),
+    getCanvasY(SURFACE_TEMP_SAFE_MAX),
     maxScrollWidth,
-    getCanvasY(minTemp) - getCanvasY(25),
+    getCanvasY(minTemp) - getCanvasY(SURFACE_TEMP_SAFE_MAX),
   );
   ctx.fillStyle = bandColors[1];
   ctx.fillRect(
     0,
-    getCanvasY(35),
+    getCanvasY(SURFACE_TEMP_CAUTION_MAX),
     maxScrollWidth,
-    getCanvasY(25) - getCanvasY(35),
+    getCanvasY(SURFACE_TEMP_SAFE_MAX) - getCanvasY(SURFACE_TEMP_CAUTION_MAX),
   );
   ctx.fillStyle = bandColors[2];
   ctx.fillRect(
     0,
-    getCanvasY(45),
+    getCanvasY(SURFACE_TEMP_DANGER_MAX),
     maxScrollWidth,
-    getCanvasY(35) - getCanvasY(45),
+    getCanvasY(SURFACE_TEMP_CAUTION_MAX) - getCanvasY(SURFACE_TEMP_DANGER_MAX),
   );
   ctx.fillStyle = bandColors[3];
-  ctx.fillRect(0, 0, maxScrollWidth, getCanvasY(45));
+  ctx.fillRect(0, 0, maxScrollWidth, getCanvasY(SURFACE_TEMP_DANGER_MAX));
 
   ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
   ctx.lineWidth = 1;

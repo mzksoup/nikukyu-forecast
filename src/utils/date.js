@@ -13,11 +13,6 @@ export function getJstDateParts(date = new Date()) {
   };
 }
 
-export function getJstDateKey(date = new Date()) {
-  const { year, month, day } = getJstDateParts(date);
-  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 export function getJstHour(date = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Tokyo",
