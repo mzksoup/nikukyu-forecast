@@ -14,13 +14,15 @@ export function snapScrollOffset(offset, minScroll, hourStepWidth) {
   }
 
   const itemSnappedIndex = Math.round(Math.abs(value) / hourStepWidth);
-  value = -(itemSnappedIndex * hourStepWidth);
+  value = -(itemSnappedIndex * hourStepWidth) || 0; // -0を0に正規化
 
   if (value > 0) value = 0;
   if (value < minScroll) value = minScroll;
   // minScrollはhourStepWidthの倍数とは限らないため、丸め後も端まで届かず
   // 最後の列が半端に切れて止まることがある。端に近ければ端まで詰める。
-  if (value - minScroll <= hourStepWidth) {
+  // ただしvalue<0を条件に加えないと、スクロール可能量がhourStepWidth未満の
+  // ときvalue===0(左端)でも常にminScrollへ吸着し、左端に戻れなくなる。
+  if (value < 0 && value - minScroll <= hourStepWidth) {
     value = minScroll;
   }
 

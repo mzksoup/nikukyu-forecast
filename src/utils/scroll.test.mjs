@@ -16,3 +16,9 @@ test("差がちょうどhourStepWidthのときも端まで詰める(e2d0094の�
   const snapped = snapScrollOffset(-1350, minScroll, hourStepWidth);
   assert.equal(snapped, minScroll);
 });
+
+test("スクロール可能量がhourStepWidth未満でも左端(0)に戻れる(CodeRabbit指摘)", () => {
+  const minScroll = -50; // hourStepWidth(70)未満
+  const snapped = snapScrollOffset(0, minScroll, hourStepWidth);
+  assert.equal(snapped, 0);
+});
