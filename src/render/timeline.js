@@ -1,10 +1,6 @@
 import { GRAPH_PADDING_LEFT, HOUR_STEP_WIDTH } from "../constants.js";
 
-export function renderHourlyGraphDetails(
-  container,
-  timelineDisplayPoints,
-  isCurrentDayView,
-) {
+export function renderHourlyGraphDetails(container, timelineDisplayPoints) {
   if (!container) return;
 
   container.innerHTML = "";

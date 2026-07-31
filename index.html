@@ -1033,11 +1033,7 @@
         const graphDetailsContainer = document.getElementById(
           "graph-hourly-details",
         );
-        renderHourlyGraphDetails(
-          graphDetailsContainer,
-          timelineDisplayPoints,
-          isCurrentDayView,
-        );
+        renderHourlyGraphDetails(graphDetailsContainer, timelineDisplayPoints);
         const graphDrawPromise = drawCanvasGraph({
           ctx,
           dataPoints: dayDataPoints,
