@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { GRAPH_PADDING_LEFT } from "../constants.js";
 
 global.Image = class {
   set src(_v) {
@@ -11,7 +12,7 @@ const { drawCanvasGraph } = await import("./graph.js");
 
 function makeCtx() {
   const textBoxes = [];
-  const charWidth = { normal: 5, bold: 6 };
+  const arcs = [];
   let font = "";
   return {
     get font() {
@@ -30,7 +31,9 @@ function makeCtx() {
     moveTo() {},
     lineTo() {},
     stroke() {},
-    arc() {},
+    arc(x, y, radius) {
+      arcs.push({ x, y, radius });
+    },
     fill() {},
     drawImage() {},
     measureText(text) {
@@ -43,6 +46,7 @@ function makeCtx() {
       textBoxes.push({ text, left, right: left + w, top: y - 8, bottom: y + 3 });
     },
     __textBoxes: textBoxes,
+    __arcs: arcs,
   };
 }
 
@@ -65,7 +69,7 @@ test("深夜0時台のように気温がY軸目盛りに近くても目盛りラ
     maxScrollWidth: 1200,
     canvasHeight: 200,
     hourStepWidth: 70,
-    graphPaddingLeft: 30,
+    graphPaddingLeft: GRAPH_PADDING_LEFT,
   });
 
   const tickLabel = ctx.__textBoxes.find((b) => b.text === "20℃");
@@ -76,6 +80,70 @@ test("深夜0時台のように気温がY軸目盛りに近くても目盛りラ
     !boxesIntersect(tickLabel, dataLabel),
     "目盛りラベルとデータラベルの描画範囲が重ならないこと",
   );
+});
+
+test("0時(最初の点)のマーカー自体が目盛りラベル欄に食い込まない", async () => {
+  const ctx = makeCtx();
+  const dataPoints = [
+    { hour: 0, surfaceTemp: 21.8, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+    { hour: 1, surfaceTemp: 21.1, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+  ];
+
+  await drawCanvasGraph({
+    ctx,
+    dataPoints,
+    currentHourVal: 0,
+    highlightCurrent: false,
+    maxScrollWidth: 1200,
+    canvasHeight: 200,
+    hourStepWidth: 70,
+    graphPaddingLeft: GRAPH_PADDING_LEFT,
+  });
+
+  const marker = ctx.__arcs.find((a) => a.radius === 5.5);
+  assert.ok(marker, "0時のマーカー(外側の丸)が描画されること");
+  const markerBox = {
+    left: marker.x - marker.radius,
+    right: marker.x + marker.radius,
+    top: marker.y - marker.radius,
+    bottom: marker.y + marker.radius,
+  };
+  for (const t of [0, 10, 20, 30, 40, 50, 60]) {
+    const tickLabel = ctx.__textBoxes.find((b) => b.text === `${t}℃`);
+    assert.ok(
+      !boxesIntersect(tickLabel, markerBox),
+      `0時のマーカーが${t}℃の目盛りラベルと重ならないこと`,
+    );
+  }
+});
+
+test("0時台の気温が目盛りの少し上(21.8度など)でも、下に逃がした先の別の目盛りと重ならない", async () => {
+  const ctx = makeCtx();
+  const dataPoints = [
+    { hour: 0, surfaceTemp: 21.8, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+    { hour: 1, surfaceTemp: 21.1, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+  ];
+
+  await drawCanvasGraph({
+    ctx,
+    dataPoints,
+    currentHourVal: 0,
+    highlightCurrent: false,
+    maxScrollWidth: 1200,
+    canvasHeight: 200,
+    hourStepWidth: 70,
+    graphPaddingLeft: GRAPH_PADDING_LEFT,
+  });
+
+  const dataLabel = ctx.__textBoxes.find((b) => b.text === "21.8°");
+  assert.ok(dataLabel, "21.8°のデータラベルが描画されること");
+  for (const t of [0, 10, 20, 30, 40, 50, 60]) {
+    const tickLabel = ctx.__textBoxes.find((b) => b.text === `${t}℃`);
+    assert.ok(
+      !boxesIntersect(tickLabel, dataLabel),
+      `21.8°のデータラベルが${t}℃の目盛りラベルと重ならないこと`,
+    );
+  }
 });
 
 test("同じctxで2回描画しても(前回のtextAlignが残っても)目盛りラベルとデータラベルが重ならない", async () => {
@@ -92,7 +160,7 @@ test("同じctxで2回描画しても(前回のtextAlignが残っても)目盛�
     maxScrollWidth: 1200,
     canvasHeight: 200,
     hourStepWidth: 70,
-    graphPaddingLeft: 30,
+    graphPaddingLeft: GRAPH_PADDING_LEFT,
   };
 
   await drawCanvasGraph(drawArgs);

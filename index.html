@@ -902,7 +902,7 @@
         if (!outerContainer || !canvas) return;
 
         viewportWidth = outerContainer.clientWidth;
-        maxScrollWidth = graphPaddingLeft + 23 * hourStepWidth + graphPaddingLeft;
+        maxScrollWidth = 2 * graphPaddingLeft + 23 * hourStepWidth;
 
         // 高DPI(Retina)ディスプレイ対応: Canvasのにじみを除去するスケーリング
         const dpr = window.devicePixelRatio || 1;
@@ -1127,6 +1127,11 @@
 
         if (scrollLeftOffset > 0) scrollLeftOffset = 0;
         if (scrollLeftOffset < minScroll) scrollLeftOffset = minScroll;
+        // minScrollはhourStepWidthの倍数とは限らないため、丸め後も端まで届かず
+        // 最後の列が半端に切れて止まることがある。端に近ければ端まで詰める。
+        if (scrollLeftOffset - minScroll <= hourStepWidth) {
+          scrollLeftOffset = minScroll;
+        }
 
         scrollArea.style.transform = `translateX(${scrollLeftOffset}px)`;
       }
