@@ -29,6 +29,43 @@ function loadMeteoconsIcon(iconName) {
   return promise;
 }
 
+// データラベルの描画範囲(ベースラインからの相対値)。bold 10px sans-serif の
+// 実測に合わせた概算で、衝突判定とテストのボックス計算で同じ値を使う。
+const LABEL_ASCENT = 8;
+const LABEL_DESCENT = 3;
+
+/**
+ * 線分と軸平行矩形が交差するか(Liang-Barsky)
+ * @returns {boolean}
+ */
+function segmentIntersectsRect(x1, y1, x2, y2, rect) {
+  let tMin = 0;
+  let tMax = 1;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  // 各境界について、線分の媒介変数 t の可視区間を絞り込む
+  const clip = (p, q) => {
+    if (p === 0) return q >= 0; // 境界と平行。外側なら交差しない
+    const r = q / p;
+    if (p < 0) {
+      if (r > tMax) return false;
+      if (r > tMin) tMin = r;
+    } else {
+      if (r < tMin) return false;
+      if (r < tMax) tMax = r;
+    }
+    return true;
+  };
+
+  return (
+    clip(-dx, x1 - rect.left) &&
+    clip(dx, rect.right - x1) &&
+    clip(-dy, y1 - rect.top) &&
+    clip(dy, rect.bottom - y1)
+  );
+}
+
 export async function drawCanvasGraph({
   ctx,
   dataPoints,
@@ -195,11 +232,61 @@ export async function drawCanvasGraph({
     const labelWidth = ctx.measureText(label).width;
     ctx.fillStyle = "rgba(15, 23, 42, 1)";
 
-    // ラベルは常にマーカーの上に描画する。中央寄せのままだと最初の点だけ左端の
-    // 目盛りラベル欄(0℃〜60℃)に食い込むため、左端を目盛り欄の右外へ clamp して逃がす。
+    // ラベルは基本マーカーの真上に置く。ただし路面温度が急変する時間帯では
+    // 隣接する折れ線がラベルを横切るため、交差しない候補位置を順に探す。
+    // 左端は常に目盛りラベル欄(0℃〜60℃)の右外へ clamp する。
     const labelGap = 4;
-    const labelLeft = Math.max(x - labelWidth / 2, tickColumnRight + labelGap);
+    const minLeft = tickColumnRight + labelGap;
+    const aboveBaseline = y - 10;
+    const belowBaseline = y + 18;
+
+    // 真上(中央) → 上・左寄せ(右へ急上昇時) → 上・右寄せ(左から急降下時)
+    const aboveCandidates = [
+      x - labelWidth / 2,
+      x - labelGap - labelWidth,
+      x + labelGap,
+    ].map((left) => ({ left: Math.max(left, minLeft), baseline: aboveBaseline }));
+
+    const candidates = [...aboveCandidates];
+    // 真下(谷)への退避は、グラフ枠(この下は時刻ラベル欄)を突き抜けないときだけ許可する。
+    // 上側の候補はこの制限を受けない(路面が氷点下でも衝突回避を効かせるため)。
+    if (belowBaseline + LABEL_DESCENT <= startY + graphHeight) {
+      candidates.push({
+        left: Math.max(x - labelWidth / 2, minLeft),
+        baseline: belowBaseline,
+      });
+    }
+
+    const neighborSegments = [];
+    if (i > 0) {
+      neighborSegments.push([
+        x - hourStepWidth,
+        getCanvasY(dataPoints[i - 1].surfaceTemp),
+      ]);
+    }
+    if (i < dataPoints.length - 1) {
+      neighborSegments.push([
+        x + hourStepWidth,
+        getCanvasY(dataPoints[i + 1].surfaceTemp),
+      ]);
+    }
+
+    const isClear = (c) => {
+      const rect = {
+        left: c.left,
+        right: c.left + labelWidth,
+        top: c.baseline - LABEL_ASCENT,
+        bottom: c.baseline + LABEL_DESCENT,
+      };
+      return neighborSegments.every(
+        ([nx, ny]) => !segmentIntersectsRect(x, y, nx, ny, rect),
+      );
+    };
+
+    // どの候補も交差する場合は従来どおり真上(中央)にフォールバックする
+    const placement = candidates.find(isClear) ?? aboveCandidates[0];
+
     ctx.textAlign = "left";
-    ctx.fillText(label, labelLeft, y - 10);
+    ctx.fillText(label, placement.left, placement.baseline);
   }
 }
