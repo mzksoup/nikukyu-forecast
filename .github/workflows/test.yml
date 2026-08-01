@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# 同じブランチへ続けてpushしたときは古い実行を打ち切る
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json の test は node --test にglobを渡すため Node 21 以上が必要
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 依存パッケージが無いプロジェクトなので install は行わない
+      - run: npm test
