@@ -195,15 +195,11 @@ export async function drawCanvasGraph({
     const labelWidth = ctx.measureText(label).width;
     ctx.fillStyle = "rgba(15, 23, 42, 1)";
 
-    if (x - labelWidth / 2 < tickColumnRight) {
-      // 最初の点は目盛りラベル欄に近く、上下どちらに置いても重なるため点の右側に表示する
-      ctx.textAlign = "left";
-      ctx.fillText(label, x + 9, y + 3);
-    } else {
-      // box.left(x - labelWidth/2) >= tickColumnRight が保証されるため、
-      // どの目盛りラベルとも重ならない(衝突判定は不要)
-      ctx.textAlign = "center";
-      ctx.fillText(label, x, y - 10);
-    }
+    // ラベルは常にマーカーの上に描画する。中央寄せのままだと最初の点だけ左端の
+    // 目盛りラベル欄(0℃〜60℃)に食い込むため、左端を目盛り欄の右外へ clamp して逃がす。
+    const labelGap = 4;
+    const labelLeft = Math.max(x - labelWidth / 2, tickColumnRight + labelGap);
+    ctx.textAlign = "left";
+    ctx.fillText(label, labelLeft, y - 10);
   }
 }
