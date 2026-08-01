@@ -146,6 +146,44 @@ test("0時台の気温が目盛りの少し上(21.8度など)でも、下に逃�
   }
 });
 
+test("最初の点のデータラベルがマーカーの上に描画され、マーカーと重ならない", async () => {
+  const ctx = makeCtx();
+  const dataPoints = [
+    { hour: 0, surfaceTemp: 20.6, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+    { hour: 1, surfaceTemp: 21.3, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+  ];
+
+  await drawCanvasGraph({
+    ctx,
+    dataPoints,
+    currentHourVal: 0,
+    highlightCurrent: false,
+    maxScrollWidth: 1200,
+    canvasHeight: 200,
+    hourStepWidth: 70,
+    graphPaddingLeft: GRAPH_PADDING_LEFT,
+  });
+
+  const marker = ctx.__arcs.find((a) => a.radius === 5.5); // 最初の点の外側マーカー
+  const dataLabel = ctx.__textBoxes.find((b) => b.text === "20.6°");
+  assert.ok(marker, "最初の点のマーカー(外側の丸)が描画されること");
+  assert.ok(dataLabel, "20.6°のデータラベルが描画されること");
+  const markerBox = {
+    left: marker.x - marker.radius,
+    right: marker.x + marker.radius,
+    top: marker.y - marker.radius,
+    bottom: marker.y + marker.radius,
+  };
+  assert.ok(
+    dataLabel.bottom <= markerBox.top,
+    "データラベルがマーカーより上に描画されること(横に逃がしていないこと)",
+  );
+  assert.ok(
+    !boxesIntersect(dataLabel, markerBox),
+    "データラベルとマーカーの描画範囲が重ならないこと",
+  );
+});
+
 test("同じctxで2回描画しても(前回のtextAlignが残っても)目盛りラベルとデータラベルが重ならない", async () => {
   const ctx = makeCtx();
   const dataPoints = [
