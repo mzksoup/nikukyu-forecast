@@ -240,16 +240,22 @@ export async function drawCanvasGraph({
     const aboveBaseline = y - 10;
     const belowBaseline = y + 18;
 
-    const candidates = [
-      // 真上(中央) → 上・左寄せ(右へ急上昇時) → 上・右寄せ(左から急降下時) → 真下(谷)
-      { left: x - labelWidth / 2, baseline: aboveBaseline },
-      { left: x - labelGap - labelWidth, baseline: aboveBaseline },
-      { left: x + labelGap, baseline: aboveBaseline },
-      { left: x - labelWidth / 2, baseline: belowBaseline },
-    ]
-      .map((c) => ({ left: Math.max(c.left, minLeft), baseline: c.baseline }))
-      // 真下の候補はグラフ枠(時刻ラベル欄)を突き抜ける場合のみ除外する
-      .filter((c) => c.baseline + LABEL_DESCENT <= startY + graphHeight);
+    // 真上(中央) → 上・左寄せ(右へ急上昇時) → 上・右寄せ(左から急降下時)
+    const aboveCandidates = [
+      x - labelWidth / 2,
+      x - labelGap - labelWidth,
+      x + labelGap,
+    ].map((left) => ({ left: Math.max(left, minLeft), baseline: aboveBaseline }));
+
+    const candidates = [...aboveCandidates];
+    // 真下(谷)への退避は、グラフ枠(この下は時刻ラベル欄)を突き抜けないときだけ許可する。
+    // 上側の候補はこの制限を受けない(路面が氷点下でも衝突回避を効かせるため)。
+    if (belowBaseline + LABEL_DESCENT <= startY + graphHeight) {
+      candidates.push({
+        left: Math.max(x - labelWidth / 2, minLeft),
+        baseline: belowBaseline,
+      });
+    }
 
     const neighborSegments = [];
     if (i > 0) {
@@ -278,10 +284,7 @@ export async function drawCanvasGraph({
     };
 
     // どの候補も交差する場合は従来どおり真上(中央)にフォールバックする
-    const placement = candidates.find(isClear) ?? {
-      left: Math.max(x - labelWidth / 2, minLeft),
-      baseline: aboveBaseline,
-    };
+    const placement = candidates.find(isClear) ?? aboveCandidates[0];
 
     ctx.textAlign = "left";
     ctx.fillText(label, placement.left, placement.baseline);
