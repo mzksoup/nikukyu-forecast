@@ -164,7 +164,10 @@ test("最初の点のデータラベルがマーカーの上に描画され、�
     graphPaddingLeft: GRAPH_PADDING_LEFT,
   });
 
-  const marker = ctx.__arcs.find((a) => a.radius === 5.5); // 最初の点の外側マーカー
+  // 同半径のマーカーが点の数だけあるため、x が最小=最初の点のものを明示的に選ぶ
+  const marker = ctx.__arcs
+    .filter((a) => a.radius === 5.5)
+    .reduce((min, a) => (a.x < min.x ? a : min));
   const dataLabel = ctx.__textBoxes.find((b) => b.text === "20.6°");
   assert.ok(marker, "最初の点のマーカー(外側の丸)が描画されること");
   assert.ok(dataLabel, "20.6°のデータラベルが描画されること");
@@ -181,6 +184,36 @@ test("最初の点のデータラベルがマーカーの上に描画され、�
   assert.ok(
     !boxesIntersect(dataLabel, markerBox),
     "データラベルとマーカーの描画範囲が重ならないこと",
+  );
+});
+
+test("最初の点のデータラベルがY軸目盛り欄の右外へclampされる", async () => {
+  const ctx = makeCtx();
+  const dataPoints = [
+    { hour: 0, surfaceTemp: 20.6, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+    { hour: 1, surfaceTemp: 21.3, weathercode: 3, precipitation: 0, meta: { chartColor: "#000" } },
+  ];
+
+  // フォント幅に依存せず必ずclamp分岐を通すため、左余白を意図的に詰めた入力を使う
+  await drawCanvasGraph({
+    ctx,
+    dataPoints,
+    currentHourVal: 0,
+    highlightCurrent: false,
+    maxScrollWidth: 1200,
+    canvasHeight: 200,
+    hourStepWidth: 70,
+    graphPaddingLeft: 20,
+  });
+
+  const tickColumnRight = Math.max(
+    ...ctx.__textBoxes.filter((b) => b.text.endsWith("℃")).map((b) => b.right),
+  );
+  const dataLabel = ctx.__textBoxes.find((b) => b.text === "20.6°");
+  assert.ok(dataLabel, "20.6°のデータラベルが描画されること");
+  assert.ok(
+    dataLabel.left >= tickColumnRight + 4,
+    `データラベルの左端(${dataLabel.left})が目盛り欄の右端(${tickColumnRight})から4px以上離れていること`,
   );
 });
 
