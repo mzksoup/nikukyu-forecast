@@ -39,6 +39,7 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U, P = 0) {
   // 6. 降水による冷却抑制（蒸発潜熱・水膜で路面が外気温に近づく）
   // ponytail: 降水強度と抑制率の線形関係は簡易近似。20mm/h（getWeatherIconの
   // 「激しい雨」しきい値と同じ）で温度上昇分をほぼ相殺し、外気温に収束させる。
+  // upgrade: 実測（路面温度センサー等）で降水時の予測誤差を確認できたら、線形以外の減衰カーブに見直す
   const precipitationDampening = Math.min(precipitation / 20, 1);
   const dampedTempRise = tempRise * (1 - precipitationDampening);
 
