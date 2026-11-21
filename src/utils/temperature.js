@@ -73,6 +73,7 @@ export function getStatusMetadata(surfaceTemp) {
     return {
       label: "注意（日陰を選んで）",
       shortLabel: "注意",
+      darkText: true, // 背景が明るい黄色なので、カードの文字を濃い色にする
       colorClass: "from-yellow-400 to-amber-500 text-slate-900",
       borderClass: "border-yellow-300",
       textClass: "text-amber-600",

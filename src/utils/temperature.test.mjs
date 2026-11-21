@@ -50,6 +50,11 @@ test("危険度の境界: 小数1桁に丸めた値で判定する(25.04は表�
   assert.equal(label(-8), "安全");
 });
 
+test("明るい黄色の「注意」だけ、カードの文字を濃い色にする(darkText)", () => {
+  assert.equal(getStatusMetadata(30).darkText, true);
+  for (const t of [20, 40, 50]) assert.ok(!getStatusMetadata(t).darkText);
+});
+
 test("roundForDisplayは、画面表示(toFixed(1))と同じ値を数で返す", () => {
   assert.equal(roundForDisplay(25.04), 25);
   assert.equal(roundForDisplay(25.06), 25.1);

@@ -7,9 +7,8 @@ import { getJstHour } from "../utils/date.js";
 export function renderResultCard(resultCard, current, currentSurface, meta) {
   if (!resultCard) return;
 
-  // 25〜35℃(注意帯)は背景が明るい黄系なので文字色を暗くする
-  // 判定は表示と同じ丸めで行われるmetaに従う(境界値を、ここで別に持たない)
-  const isAttention = meta.shortLabel === "注意";
+  // 背景が明るい段階(注意)は、metaのdarkTextで文字色を暗くする。境界値やラベル文言には頼らない
+  const isAttention = Boolean(meta.darkText);
   const textContrastClass = isAttention ? "text-slate-900" : "text-white";
   const subTextContrastClass = isAttention
     ? "text-slate-750 font-semibold"
