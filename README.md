@@ -24,7 +24,7 @@ Open-Meteoの気象データと位置情報を使って、現在地周辺の路�
 
 - HTML
 - JavaScript (ES Modules)
-- Tailwind CSS（CLIで作った `styles.css` をコミットして配信。下の「CSSの作り直し」参照）
+- Tailwind CSS
 - Lucide Icons
 
 ## 主要ファイル
@@ -41,19 +41,6 @@ Open-Meteoの気象データと位置情報を使って、現在地周辺の路�
 ```bash
 npm test
 ```
-
-## CSSの作り直し
-
-`index.html` や `src/` のクラス名を変えたら、`styles.css` を作り直してコミットします。
-
-```bash
-npm install
-npm run build:css
-```
-
-- クラス名は、完成した文字列としてコードに書きます（`bg-${color}-500` のような組み立ては、CSSが作られません）。
-- 作り直しを忘れると、CIの `git diff --exit-code styles.css` が失敗します。
-- 画面の見た目（ブラウザ）は、`styles.css` を読み込みます。以前は Tailwind の CDN（ブラウザ内でCSSを作る版）を使っていました。
 
 ## 注意
 
