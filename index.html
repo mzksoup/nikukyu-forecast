@@ -85,7 +85,10 @@
       }
     </script>
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- ?v=2: ブラウザのファビコンキャッシュを更新するため。アイコンを変えたら番号を上げる -->
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png?v=2" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon-192.png?v=2" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>にくきゅう天気予報 | アスファルト温度予報</title>
     <!-- Tailwind CSS -->
@@ -149,7 +152,7 @@
       <div class="max-w-2xl mx-auto flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <img
-            src="./favicon.svg"
+            src="./favicon.svg?v=2"
             alt=""
             width="44"
             height="44"
