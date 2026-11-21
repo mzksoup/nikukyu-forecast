@@ -17,7 +17,9 @@ import { fetchWeatherForecast } from "./services/weather.js";
 import { renderResultCard } from "./render/result-card.js";
 import { renderHourlyGraphDetails } from "./render/timeline.js";
 import { drawCanvasGraph } from "./canvas/graph.js";
-import { snapScrollOffset } from "./utils/scroll.js";
+import { keyboardScrollTarget, snapScrollOffset } from "./utils/scroll.js";
+import { createLatestGuard } from "./utils/latest.js";
+import { validateForecast } from "./utils/forecast.js";
 
 // グローバルデータ保持
 let weatherForecastData = null;
@@ -40,6 +42,8 @@ const canvasHeight = CANVAS_HEIGHT;
 const hourStepWidth = HOUR_STEP_WIDTH; // 1時間あたりの幅px
 const graphPaddingLeft = GRAPH_PADDING_LEFT;
 let graphRenderToken = 0;
+// 起動時のデモと現在地の取得が重なっても、最後に始めた取得の結果だけを使う
+const newPredictionRequest = createLatestGuard();
 
 // --- DOM要素とイベントリスナーの安全な初期化処理 ---
 function initDOMElements() {
@@ -119,6 +123,19 @@ function setupEventListeners() {
 
   if (!scrollArea) return;
 
+  // キーボード操作(←→で1時間ぶん、Home/Endで両端)。ドラッグできない人も別の時間帯を見られる
+  outerContainer?.addEventListener("keydown", (e) => {
+    const target = keyboardScrollTarget(
+      e.key,
+      scrollLeftOffset,
+      getMinScroll(),
+      hourStepWidth,
+    );
+    if (target === null) return;
+    e.preventDefault();
+    scrollToX(target);
+  });
+
   // マウスイベント
   scrollArea.addEventListener("mousedown", (e) =>
     handleDragStart(e.clientX),
@@ -152,6 +169,10 @@ function toggleAccordion(id) {
     content.classList.add("hidden");
     icon.classList.remove("rotate-180");
   }
+  // 開閉の状態を、スクリーンリーダーに伝える
+  document
+    .getElementById(`${id}-button`)
+    ?.setAttribute("aria-expanded", String(isHidden));
 }
 
 // --- GPS連動およびデータ取得（ハイブリッド位置特定） ---
@@ -266,10 +287,12 @@ async function fetchPrediction(lat, lon) {
       "最新の気象予測データを解析中...";
   }
 
+  const isLatest = newPredictionRequest();
   let responseData = null;
   try {
-    responseData = await fetchWeatherForecast(lat, lon);
+    responseData = validateForecast(await fetchWeatherForecast(lat, lon));
   } catch (error) {
+    if (!isLatest()) return;
     if (loader) loader.classList.add("hidden");
     showError(
       error instanceof Error
@@ -279,6 +302,7 @@ async function fetchPrediction(lat, lon) {
     return;
   }
 
+  if (!isLatest()) return;
   if (loader) loader.classList.add("hidden");
 
   const iconBox = document.getElementById("location-icon-box");
@@ -528,7 +552,12 @@ function handleDragEnd() {
 }
 
 // 画面幅変化時の自動リサイズ
+// 幅が変わった時だけ。スマホはアドレスバーの出入りでも resize が出る(高さだけ変わる)ため、
+// 毎回描き直すと、見ている時間帯から現在の位置へ戻されてしまう
+let lastResizeWidth = window.innerWidth;
 window.addEventListener("resize", () => {
+  if (window.innerWidth === lastResizeWidth) return;
+  lastResizeWidth = window.innerWidth;
   if (weatherForecastData) {
     initGraphSizing();
     renderActiveDayTimelineAndGraph();

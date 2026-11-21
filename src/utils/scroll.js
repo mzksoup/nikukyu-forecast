@@ -28,3 +28,18 @@ export function snapScrollOffset(offset, minScroll, hourStepWidth) {
 
   return value;
 }
+
+/**
+ * グラフをキーボードで動かす時の、移動先のスクロールオフセット
+ * @param {string} key KeyboardEvent.key
+ * @param {number} offset 現在のスクロールオフセット(0以下)
+ * @returns {number|null} 移動先。対象外のキーはnull
+ */
+export function keyboardScrollTarget(key, offset, minScroll, hourStepWidth) {
+  if (key === "Home") return 0;
+  if (key === "End") return minScroll;
+  // →は後の時間帯を見る(内容が左へ動く)ので、オフセットは減る
+  if (key === "ArrowRight") return snapScrollOffset(offset - hourStepWidth, minScroll, hourStepWidth);
+  if (key === "ArrowLeft") return snapScrollOffset(offset + hourStepWidth, minScroll, hourStepWidth);
+  return null;
+}
