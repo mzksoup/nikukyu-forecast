@@ -479,7 +479,7 @@ function renderActiveDayTimelineAndGraph() {
     scrollToX(0);
   }
 
-  lucide.createIcons();
+  window.lucide?.createIcons();
 }
 
 // --- ドラッグ ＆ スワイプ操作用インタラクション設計 ---
@@ -539,7 +539,8 @@ window.addEventListener("resize", () => {
 document.addEventListener("DOMContentLoaded", () => {
   initDOMElements();
   setupEventListeners();
-  lucide.createIcons();
+  // アイコン用スクリプト(外部CDN)が読めない時、ここで止まると天気が出ない。アイコンだけ諦める
+  window.lucide?.createIcons();
   startDaySyncTimer();
 
   // 起動時に白紙画面を防ぐため、自動で東京の天気予測をロード（親切なUX設計）
