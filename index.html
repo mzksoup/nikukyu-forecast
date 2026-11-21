@@ -91,10 +91,22 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap");
       body {
-        font-family: "Plus Jakarta Sans", "Noto Sans JP", sans-serif;
-        background-color: #f8fafc;
+        font-family: "Noto Sans JP", sans-serif;
+        background-color: #ffffff;
+        text-wrap: pretty;
+      }
+      /* design-principles.md §4: focus環は黒＋黄の二重 */
+      :focus-visible {
+        outline: 2px solid #000;
+        outline-offset: 0;
+        box-shadow: 0 0 0 4px #ffd43d;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
       }
       /* 横スクロールバー非表示 */
       .scrollbar-none::-webkit-scrollbar {
@@ -128,7 +140,7 @@
     </style>
   </head>
   <body
-    class="text-slate-800 min-h-screen flex flex-col antialiased select-none"
+    class="text-[#1A1A1A] min-h-screen flex flex-col antialiased"
   >
     <!-- Google Tag Manager (noscript) -->
     <noscript
@@ -142,23 +154,23 @@
     <!-- End Google Tag Manager (noscript) -->
     <!-- ヘッダー -->
     <header
-      class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-3.5 shadow-sm"
+      class="sticky top-0 z-50 bg-white border-b border-[#949494] px-4 py-3.5"
     >
       <div class="max-w-2xl mx-auto flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div
-            class="bg-gradient-to-tr from-orange-500 to-amber-500 text-white p-2.5 rounded-2xl shadow-md shadow-orange-500/10"
+            class="bg-[#0017C1] text-white p-2.5"
           >
             <i data-lucide="dog" class="w-6 h-6"></i>
           </div>
           <div>
             <h1
-              class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-1.5"
+              class="text-lg font-bold text-[#1A1A1A] tracking-tight flex items-center gap-1.5"
             >
               にくきゅう天気予報
             </h1>
-            <p class="text-[10px] text-slate-400 font-semibold">
-              アスファルト熱地面の温度を予測し、愛犬の肉球🐾を守ります
+            <p class="text-[10px] text-[#4D4D4D] font-bold">
+              アスファルト熱地面の温度を予測し、愛犬の肉球を守ります
             </p>
           </div>
         </div>
@@ -169,31 +181,31 @@
     <main class="flex-grow max-w-2xl w-full mx-auto px-4 py-6 space-y-6">
       <!-- 位置情報取得エリア -->
       <div
-        class="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4"
+        class="bg-white border border-[#949494] p-5 space-y-4"
       >
         <div
           class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div class="flex items-center space-x-3">
             <div
-              class="p-2.5 bg-slate-50 text-slate-500 rounded-xl"
+              class="p-2.5 bg-[#F2F2F2] text-[#4D4D4D]"
               id="location-icon-box"
             >
               <i data-lucide="map-pin" class="w-5 h-5"></i>
             </div>
             <div>
               <span
-                class="text-[10px] font-bold text-slate-400 block tracking-wider"
+                class="text-[10px] font-bold text-[#4D4D4D] block tracking-wider"
                 >現在地</span
               >
-              <span id="location-name" class="text-sm font-bold text-slate-700"
+              <span id="location-name" class="text-sm font-bold text-[#1A1A1A]"
                 >場所を特定してください</span
               >
             </div>
           </div>
           <button
             id="gps-load-button"
-            class="w-full sm:w-auto bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-custom flex items-center justify-center space-x-2"
+            class="w-full sm:w-auto bg-[#0017C1] hover:bg-[#00118F] active:bg-[#000071] disabled:bg-[#767676] disabled:cursor-not-allowed text-white font-bold text-sm px-6 py-3.5 transition-custom flex items-center justify-center space-x-2"
           >
             <i data-lucide="navigation" class="w-4 h-4"></i>
             <span>GPS現在地から天気を読み込む</span>
@@ -206,9 +218,9 @@
           class="hidden py-10 flex flex-col items-center justify-center space-y-3"
         >
           <div
-            class="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin"
+            class="w-10 h-10 border-4 border-[#949494] border-t-[#0017C1] rounded-full animate-spin motion-reduce:animate-none"
           ></div>
-          <p id="loading-text" class="text-xs text-slate-500 font-semibold">
+          <p id="loading-text" class="text-xs text-[#4D4D4D] font-bold">
             位置情報を特定中...
           </p>
         </div>
@@ -216,11 +228,11 @@
         <!-- エラー表示 -->
         <div
           id="error-card"
-          class="hidden p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start space-x-3 text-rose-800"
+          class="hidden p-4 bg-white border-2 border-[#CE0000] flex items-start space-x-3 text-[#CE0000]"
         >
           <i
             data-lucide="alert-circle"
-            class="w-5 h-5 shrink-0 mt-0.5 text-rose-500"
+            class="w-5 h-5 shrink-0 mt-0.5 text-[#CE0000]"
           ></i>
           <div class="text-xs space-y-1.5">
             <p class="font-bold">気象情報を読み込めませんでした</p>
@@ -229,7 +241,7 @@
             </p>
             <button
               id="demo-data-button"
-              class="text-orange-600 font-bold underline block mt-1"
+              class="text-[#0017C1] font-bold underline block mt-1"
             >
               デモデータ（東京・晴れの夏日）で試す
             </button>
@@ -240,13 +252,13 @@
       <!-- リアルタイム判定結果（初期状態はダミー表示） -->
       <div
         id="result-card"
-        class="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[2.5rem] p-6 text-slate-500 relative overflow-hidden"
+        class="bg-[#F2F2F2] border border-[#949494] p-6 text-[#4D4D4D] relative overflow-hidden"
       >
         <div
           class="relative z-10 flex flex-col items-center text-center py-10 space-y-4"
         >
           <div
-            class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 overflow-hidden"
+            class="w-16 h-16 bg-white flex items-center justify-center text-[#4D4D4D] border border-[#949494] overflow-hidden"
           >
             <img
               src="https://cdn.meteocons.com/3.0.0-next.10/svg/fill/clear-day.svg"
@@ -257,10 +269,10 @@
             />
           </div>
           <div class="space-y-1">
-            <h2 class="text-lg font-bold text-slate-800">
+            <h2 class="text-lg font-bold text-[#1A1A1A]">
               アスファルト路面の状態を解析中...
             </h2>
-            <p class="text-xs text-slate-400 max-w-sm">
+            <p class="text-xs text-[#4D4D4D] max-w-sm">
               上のボタンをタップして位置情報を送信すると、現在のアスファルト予測温度および3日間（今日・明日・明後日）の適正予報グラフを表示します。
             </p>
           </div>
@@ -270,39 +282,39 @@
       <!-- 3日間お散歩タイムライン＆スワイプグラフ -->
       <div
         id="timeline-section"
-        class="hidden bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-5"
+        class="hidden bg-white border border-[#949494] p-5 space-y-5"
       >
         <div
-          class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-50 pb-4"
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#949494] pb-4"
         >
           <div class="flex items-center space-x-2">
-            <div class="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
+            <div class="p-1.5 bg-[#E8F1FE] text-[#0017C1]">
               <i data-lucide="calendar" class="w-4 h-4"></i>
             </div>
-            <h3 class="text-sm font-black text-slate-800">
+            <h3 class="text-sm font-bold text-[#1A1A1A]">
               アスファルト路面の温度予測
             </h3>
           </div>
 
           <!-- 日付選択タブ -->
           <div
-            class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold shrink-0 self-start sm:self-auto"
+            class="flex bg-[#F2F2F2] border border-[#949494] text-xs font-bold shrink-0 self-start sm:self-auto"
           >
             <button
               id="day-tab-0"
-              class="day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm"
+              class="day-tab px-3 py-1.5 transition-custom bg-white text-[#1A1A1A]"
             >
               今日
             </button>
             <button
               id="day-tab-1"
-              class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
+              class="day-tab px-3 py-1.5 transition-custom text-[#4D4D4D] hover:text-[#1A1A1A]"
             >
               明日
             </button>
             <button
               id="day-tab-2"
-              class="day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700"
+              class="day-tab px-3 py-1.5 transition-custom text-[#4D4D4D] hover:text-[#1A1A1A]"
             >
               明後日
             </button>
@@ -312,16 +324,16 @@
         <!-- 動的にスライド可能な温度変動グラフエリア -->
         <div class="space-y-1">
           <div
-            class="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1"
+            class="flex items-center justify-between text-[11px] text-[#4D4D4D] font-bold px-1"
           >
             <span class="flex items-center gap-1"
               ><i data-lucide="info" class="w-3.5 h-3.5"></i
               >左右にドラッグして全時間帯の温度を確認できます</span
             >
-            <span id="graph-date-indicator" class="text-slate-700">本日</span>
+            <span id="graph-date-indicator" class="text-[#1A1A1A]">本日</span>
           </div>
           <div
-            class="graph-outer-container rounded-2xl border border-slate-100 bg-slate-50/50"
+            class="graph-outer-container border border-[#949494] bg-[#F2F2F2]"
           >
             <!-- インタラクティブなスワイプ折れ線グラフ -->
             <div id="graph-scroll-area" class="graph-scroll-area">
@@ -333,22 +345,22 @@
 
         <!-- カラーマーカー説明 -->
         <div
-          class="flex flex-wrap gap-x-4 gap-y-1.5 justify-center text-[10px] font-bold pt-0.5 border-t border-slate-100 text-slate-500"
+          class="flex flex-wrap gap-x-4 gap-y-1.5 justify-center text-[10px] font-bold pt-0.5 border-t border-[#949494] text-[#4D4D4D]"
         >
           <span class="flex items-center"
-            ><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span
+            ><span class="w-2.5 h-2.5 bg-[#197A4B] mr-1.5"></span
             >安全（25℃以下）</span
           >
           <span class="flex items-center"
-            ><span class="w-2.5 h-2.5 rounded-full bg-yellow-400 mr-1.5"></span
+            ><span class="w-2.5 h-2.5 bg-[#FFD43D] border border-[#1A1A1A] mr-1.5"></span
             >注意（25.1〜35℃）</span
           >
           <span class="flex items-center"
-            ><span class="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1.5"></span
+            ><span class="w-2.5 h-2.5 bg-[#C74700] mr-1.5"></span
             >危険（35.1〜45℃）</span
           >
           <span class="flex items-center"
-            ><span class="w-2.5 h-2.5 rounded-full bg-rose-600 mr-1.5"></span
+            ><span class="w-2.5 h-2.5 bg-[#CE0000] mr-1.5"></span
             >絶対NG（45.1℃以上）</span
           >
         </div>
@@ -357,7 +369,7 @@
       <!-- 根拠・出典・免責事項（アコーディオンUI） -->
       <div class="space-y-3 pt-4">
         <div
-          class="text-xs text-slate-400 font-bold px-1 flex items-center gap-1.5"
+          class="text-xs text-[#4D4D4D] font-bold px-1 flex items-center gap-1.5"
         >
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
           データの信頼性とご利用ガイド
@@ -365,33 +377,33 @@
 
         <!-- アコーディオン1: 計算ロジックと根拠 -->
         <div
-          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+          class="bg-white border border-[#949494] overflow-hidden"
         >
           <button
             id="acc-logic-button"
-            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+            class="w-full flex items-center justify-between p-4 font-bold text-[#1A1A1A] hover:bg-[#F2F2F2] text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
-              <i data-lucide="calculator" class="w-4 h-4 text-orange-500"></i>
+              <i data-lucide="calculator" class="w-4 h-4 text-[#0017C1]"></i>
               アスファルト温度の計算ロジックと参考文献
             </span>
             <i
               data-lucide="chevron-down"
               id="acc-logic-icon"
-              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+              class="w-4 h-4 text-[#4D4D4D] transition-transform duration-300"
             ></i>
           </button>
           <div
             id="acc-logic-content"
-            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+            class="hidden border-t border-[#949494] p-4 text-xs text-[#4D4D4D] leading-relaxed space-y-3 bg-[#F2F2F2]"
           >
             <p>
               アスファルトの表面温度は、気温に加えて日射吸収と風による冷却、降水による濡れの影響を受けます。本アプリでは<strong>相当外気温度モデル</strong>を使い、気温・日射量・風速・降水量から推定しています。
             </p>
             <div
-              class="p-3 bg-slate-50 rounded-xl font-mono text-[11px] text-slate-700 space-y-1"
+              class="p-3 bg-[#F2F2F2] font-mono text-[11px] text-[#1A1A1A] space-y-1"
             >
-              <p class="font-bold text-slate-800">
+              <p class="font-bold text-[#1A1A1A]">
                 【予測アルゴリズム（地表面熱収支モデル）の構成】
               </p>
               <p>
@@ -411,7 +423,7 @@
                 路面が濡れることによる蒸発潜熱・水膜の効果を降水量(mm/h)に応じて反映し、激しい雨（20mm/h以上）ではほぼ気温相当まで低下
               </p>
             </div>
-            <p class="text-[10px] text-slate-400">
+            <p class="text-[10px] text-[#4D4D4D]">
               【参考文献】<br />
               1.
               日本道路協会『舗装設計施工指針』アスファルトの熱物性値（アルベド・日射吸収率）に関する基準。<br />
@@ -426,25 +438,25 @@
 
         <!-- アコーディオン2: 肉球の安全温度基準 -->
         <div
-          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+          class="bg-white border border-[#949494] overflow-hidden"
         >
           <button
             id="acc-safety-button"
-            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+            class="w-full flex items-center justify-between p-4 font-bold text-[#1A1A1A] hover:bg-[#F2F2F2] text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
-              <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i>
+              <i data-lucide="shield-alert" class="w-4 h-4 text-[#0017C1]"></i>
               肉球の安全温度基準と参考文献
             </span>
             <i
               data-lucide="chevron-down"
               id="acc-safety-icon"
-              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+              class="w-4 h-4 text-[#4D4D4D] transition-transform duration-300"
             ></i>
           </button>
           <div
             id="acc-safety-content"
-            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+            class="hidden border-t border-[#949494] p-4 text-xs text-[#4D4D4D] leading-relaxed space-y-3 bg-[#F2F2F2]"
           >
             <p>
               犬の肉球（角質層および表皮組織）は人間よりも耐久性があるものの、生きた組織であるため<strong>熱伝達によるタンパク質の変性（火傷）</strong>を回避できません。本アプリの危険度判定の境界は、以下の生物物理学的データに準拠しています：
@@ -467,7 +479,7 @@
                 アスファルト表面が50℃に達する<strong>「約1分間の接触」</strong>で、60℃では<strong>「数秒」</strong>で真皮に至る熱傷（II度〜III度熱傷）を引き起こすことが実験的臨床データから知られています。
               </li>
             </ul>
-            <p class="text-[10px] text-slate-400">
+            <p class="text-[10px] text-[#4D4D4D]">
               【参考文献】<br />
               1. 全米獣医師会（AVMA）夏の安全ガイドライン：『The 5-Second
               Rule（手の甲をアスファルトに5秒間押し当てて熱いと感じたら、犬にとって歩行不可）』に基づく物理的境界判定の補正。<br />
@@ -478,25 +490,25 @@
 
         <!-- アコーディオン3: 免責事項 -->
         <div
-          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+          class="bg-white border border-[#949494] overflow-hidden"
         >
           <button
             id="acc-disclaimer-button"
-            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+            class="w-full flex items-center justify-between p-4 font-bold text-[#1A1A1A] hover:bg-[#F2F2F2] text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
-              <i data-lucide="file-text" class="w-4 h-4 text-slate-500"></i>
+              <i data-lucide="file-text" class="w-4 h-4 text-[#4D4D4D]"></i>
               ご利用にあたっての免責事項
             </span>
             <i
               data-lucide="chevron-down"
               id="acc-disclaimer-icon"
-              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+              class="w-4 h-4 text-[#4D4D4D] transition-transform duration-300"
             ></i>
           </button>
           <div
             id="acc-disclaimer-content"
-            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-2.5 bg-slate-50/20"
+            class="hidden border-t border-[#949494] p-4 text-xs text-[#4D4D4D] leading-relaxed space-y-2.5 bg-[#F2F2F2]"
           >
             <p>
               1.
@@ -506,7 +518,7 @@
               2.
               アスファルトの実際の温度は、<strong>周囲の建物の影、樹木、風を遮る障害物、路面の材質（厚みや色の黒さ）、乾燥状態</strong>などの「マイクロクライメイト（局所気候）」により、予測値と大きく異なる場合があります（特に日陰は予測値より著しく低下し、完全に遮られない日向は急上昇します）。
             </p>
-            <p class="font-bold text-slate-700">
+            <p class="font-bold text-[#1A1A1A]">
               3.
               お散歩を開始される前には、飼い主様ご自身の手の甲をアスファルトに5秒間押し当てる等の物理的チェック（5秒ルール）を必ず併用してください。
             </p>
@@ -519,31 +531,31 @@
 
         <!-- アコーディオン4: よくある質問 -->
         <div
-          class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm"
+          class="bg-white border border-[#949494] overflow-hidden"
         >
           <button
             id="acc-faq-button"
-            class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
+            class="w-full flex items-center justify-between p-4 font-bold text-[#1A1A1A] hover:bg-[#F2F2F2] text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
               <i
                 data-lucide="help-circle"
-                class="w-4 h-4 text-slate-500"
+                class="w-4 h-4 text-[#4D4D4D]"
               ></i>
               よくある質問
             </span>
             <i
               data-lucide="chevron-down"
               id="acc-faq-icon"
-              class="w-4 h-4 text-slate-400 transition-transform duration-300"
+              class="w-4 h-4 text-[#4D4D4D] transition-transform duration-300"
             ></i>
           </button>
           <div
             id="acc-faq-content"
-            class="hidden border-t border-slate-100/50 p-4 text-xs text-slate-500 leading-relaxed space-y-3 bg-slate-50/20"
+            class="hidden border-t border-[#949494] p-4 text-xs text-[#4D4D4D] leading-relaxed space-y-3 bg-[#F2F2F2]"
           >
             <div>
-              <p class="font-bold text-slate-700">
+              <p class="font-bold text-[#1A1A1A]">
                 Q. 予測温度はどれくらい正確ですか？
               </p>
               <p>
@@ -552,7 +564,7 @@
               </p>
             </div>
             <div>
-              <p class="font-bold text-slate-700">
+              <p class="font-bold text-[#1A1A1A]">
                 Q. GPSを許可しないと使えませんか？
               </p>
               <p>
@@ -561,7 +573,7 @@
               </p>
             </div>
             <div>
-              <p class="font-bold text-slate-700">
+              <p class="font-bold text-[#1A1A1A]">
                 Q. 危険度はどうやって判定していますか？
               </p>
               <p>
@@ -576,7 +588,7 @@
 
     <!-- フッター -->
     <footer
-      class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 space-y-2 mt-auto"
+      class="bg-white border-t border-[#949494] py-6 text-center text-xs text-[#4D4D4D] space-y-2 mt-auto"
     >
       <p>© 2026 にくきゅう天気予報 @mzksoup</p>
       <p class="text-[10px] px-4">
@@ -584,7 +596,7 @@
         <a
           href="https://open-meteo.com/"
           target="_blank"
-          class="underline hover:text-orange-500"
+          class="underline hover:text-[#0017C1]"
           >Open-Meteo API</a
         >
         (非営利目的フリープラン)

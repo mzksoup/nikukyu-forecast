@@ -283,7 +283,7 @@ async function fetchPrediction(lat, lon) {
 
   const iconBox = document.getElementById("location-icon-box");
   if (iconBox)
-    iconBox.className = "p-2.5 bg-emerald-50 text-emerald-600 rounded-xl";
+    iconBox.className = "p-2.5 bg-[#E8F1FE] text-[#0017C1]";
 
   weatherForecastData = responseData;
   renderAllForecasts();
@@ -355,10 +355,10 @@ function updateDayTabUI() {
 
     if (i === selectedDayOffset) {
       tab.className =
-        "day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
+        "day-tab px-4 py-3 transition-custom bg-[#0017C1] text-white";
     } else {
       tab.className =
-        "day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
+        "day-tab px-4 py-3 transition-custom text-[#4D4D4D] hover:text-[#1A1A1A]";
     }
   }
 }
