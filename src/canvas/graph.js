@@ -29,8 +29,8 @@ function loadMeteoconsIcon(iconName) {
   return promise;
 }
 
-// データラベルの描画範囲(ベースラインからの相対値)。bold 10px の概算値
-// (旧sans-serifで見積もり、Noto Sans JPでは未実測)で、衝突判定とテストのボックス計算で同じ値を使う。
+// データラベルの描画範囲(ベースラインからの相対値)。bold 10px sans-serif の
+// 実測に合わせた概算で、衝突判定とテストのボックス計算で同じ値を使う。
 const LABEL_ASCENT = 8;
 const LABEL_DESCENT = 3;
 
@@ -100,12 +100,11 @@ export async function drawCanvasGraph({
     return startY + graphHeight - ratio * graphHeight;
   };
 
-  // 色の正本は utils/temperature.js の getStatusMetadata。ここは同じ色の透過版（変更時は揃える）
   const bandColors = [
-    "rgba(25, 122, 75, 0.08)",
-    "rgba(255, 212, 61, 0.15)",
-    "rgba(199, 71, 0, 0.08)",
-    "rgba(206, 0, 0, 0.08)",
+    "rgba(16, 185, 129, 0.05)",
+    "rgba(250, 204, 21, 0.08)",
+    "rgba(249, 115, 22, 0.05)",
+    "rgba(225, 29, 72, 0.05)",
   ];
 
   ctx.fillStyle = bandColors[0];
@@ -134,7 +133,7 @@ export async function drawCanvasGraph({
 
   ctx.strokeStyle = "rgba(226, 232, 240, 0.8)";
   ctx.lineWidth = 1;
-  ctx.font = "bold 9px 'Noto Sans JP', sans-serif";
+  ctx.font = "bold 9px sans-serif";
   ctx.textAlign = "left";
   const tickLabelBoxes = [0, 10, 20, 30, 40, 50, 60].map((t) => {
     const y = getCanvasY(t);
@@ -145,7 +144,7 @@ export async function drawCanvasGraph({
 
     const text = `${t}℃`;
     const width = ctx.measureText(text).width;
-    ctx.fillStyle = "#4D4D4D";
+    ctx.fillStyle = "rgba(100, 116, 139, 0.7)";
     ctx.fillText(text, 8, y - 4);
     return { left: 8, right: 8 + width, top: y - 4 - 8, bottom: y - 4 + 3 };
   });
@@ -162,12 +161,12 @@ export async function drawCanvasGraph({
     ctx.stroke();
 
     if (highlightCurrent && dp.hour === currentHourVal) {
-      ctx.fillStyle = "rgba(0, 23, 193, 0.08)";
+      ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
       ctx.fillRect(x - hourStepWidth / 2, 0, hourStepWidth, canvasHeight);
     }
 
-    ctx.fillStyle = "#4D4D4D";
-    ctx.font = "bold 10px 'Noto Sans JP', sans-serif";
+    ctx.fillStyle = "rgba(100, 116, 139, 1)";
+    ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
     const hourLabelY = startY + graphHeight + 10;
     ctx.fillText(`${dp.hour}:00`, x, hourLabelY);
@@ -181,21 +180,21 @@ export async function drawCanvasGraph({
     }
 
     if (dp.weatherLabel) {
-      ctx.fillStyle = "#4D4D4D";
-      ctx.font = "bold 9px 'Noto Sans JP', sans-serif";
+      ctx.fillStyle = "rgba(71, 85, 105, 1)";
+      ctx.font = "bold 9px sans-serif";
       ctx.fillText(dp.weatherLabel, x, hourLabelY + 38);
     }
 
     if (highlightCurrent && dp.hour === currentHourVal) {
-      ctx.fillStyle = "#0017C1";
-      ctx.font = "bold 8px 'Noto Sans JP', sans-serif";
+      ctx.fillStyle = "rgba(249, 115, 22, 1)";
+      ctx.font = "bold 8px sans-serif";
       ctx.fillText("現在", x, startY - 22);
     }
   }
 
   ctx.beginPath();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = "#4D4D4D";
+  ctx.strokeStyle = "rgba(71, 85, 105, 0.85)";
 
   for (let i = 0; i < dataPoints.length; i++) {
     if (shouldAbort()) return;
@@ -219,22 +218,19 @@ export async function drawCanvasGraph({
     const y = getCanvasY(dp.surfaceTemp);
 
     ctx.fillStyle = dp.meta.chartColor;
-    ctx.strokeStyle = "#1A1A1A";
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(x, y, 5.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
 
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(x, y, 2.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.font = "bold 10px 'Noto Sans JP', sans-serif";
+    ctx.font = "bold 10px sans-serif";
     const label = `${dp.surfaceTemp.toFixed(1)}°`;
     const labelWidth = ctx.measureText(label).width;
-    ctx.fillStyle = "#1A1A1A";
+    ctx.fillStyle = "rgba(15, 23, 42, 1)";
 
     // ラベルは基本マーカーの真上に置く。ただし路面温度が急変する時間帯では
     // 隣接する折れ線がラベルを横切るため、交差しない候補位置を順に探す。

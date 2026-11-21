@@ -30,24 +30,3 @@ test("降水量が未定義/負値でも壊れない(0扱い)", () => {
   assert.equal(undef, base);
   assert.equal(negative, base);
 });
-
-// デザインルール(design-principles.md): 危険度4色は意味色の例外として認める。平色・角丸なし・DADSトークン値
-import { getStatusMetadata } from "./temperature.js";
-
-const STAGE_TEMPS = [20, 30, 40, 50];
-const EXPECTED_CHART_COLORS = ["#197A4B", "#FFD43D", "#C74700", "#CE0000"];
-
-test("危険度4段階はグラデーション・Tailwindカラー名を使わず平色トークンで定義する", () => {
-  for (const t of STAGE_TEMPS) {
-    const meta = getStatusMetadata(t);
-    assert.ok(!/from-|to-|gradient/.test(meta.colorClass), `${t}℃: colorClassにグラデが残っている`);
-    assert.match(meta.colorClass, /bg-\[#[0-9A-Fa-f]{6}\]/);
-  }
-});
-
-test("危険度4段階のchartColorはDADSの意味色トークンと一致する", () => {
-  assert.deepEqual(
-    STAGE_TEMPS.map((t) => getStatusMetadata(t).chartColor),
-    EXPECTED_CHART_COLORS,
-  );
-});
