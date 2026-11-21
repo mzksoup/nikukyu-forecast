@@ -24,5 +24,10 @@ jobs:
         with:
           node-version: "22"
 
-      # 依存パッケージが無いプロジェクトなので install は行わない
+      # テスト自体は依存パッケージなしで動く
       - run: npm test
+
+      # styles.css が最新か確かめる。クラス名を変えて作り直しを忘れると、ここで失敗する
+      - run: npm ci
+      - run: npm run build:css
+      - run: git diff --exit-code styles.css
