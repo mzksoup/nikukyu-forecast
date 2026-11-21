@@ -155,6 +155,11 @@ function toggleAccordion(id) {
 }
 
 // --- GPS連動およびデータ取得（ハイブリッド位置特定） ---
+function setGpsButtonBusy(busy) {
+  const button = document.getElementById("gps-load-button");
+  if (button) button.disabled = busy;
+}
+
 function getGeolocatedWeather() {
   const loader = document.getElementById("loading-state");
   const errorCard = document.getElementById("error-card");
@@ -163,6 +168,7 @@ function getGeolocatedWeather() {
   if (errorCard) errorCard.classList.add("hidden");
   if (loader) loader.classList.remove("hidden");
   if (loadingText) loadingText.innerText = "現在地を特定中...";
+  setGpsButtonBusy(true);
 
   const geoOptions = {
     enableHighAccuracy: false,
@@ -270,6 +276,7 @@ async function fetchPrediction(lat, lon) {
   try {
     responseData = await fetchWeatherForecast(lat, lon);
   } catch (error) {
+    setGpsButtonBusy(false);
     if (loader) loader.classList.add("hidden");
     showError(
       error instanceof Error
@@ -280,10 +287,11 @@ async function fetchPrediction(lat, lon) {
   }
 
   if (loader) loader.classList.add("hidden");
+  setGpsButtonBusy(false);
 
   const iconBox = document.getElementById("location-icon-box");
   if (iconBox)
-    iconBox.className = "p-2.5 bg-emerald-50 text-emerald-600 rounded-xl";
+    iconBox.className = "p-2.5 bg-[#E8F1FE] text-[#0017C1]";
 
   weatherForecastData = responseData;
   renderAllForecasts();
@@ -355,10 +363,10 @@ function updateDayTabUI() {
 
     if (i === selectedDayOffset) {
       tab.className =
-        "day-tab px-3 py-1.5 rounded-lg transition-custom bg-white text-slate-800 shadow-sm";
+        "day-tab px-4 py-3 min-h-[44px] transition-custom bg-[#0017C1] text-white";
     } else {
       tab.className =
-        "day-tab px-3 py-1.5 rounded-lg transition-custom text-slate-400 hover:text-slate-700";
+        "day-tab px-4 py-3 min-h-[44px] transition-custom text-[#4D4D4D] hover:text-[#1A1A1A]";
     }
   }
 }
