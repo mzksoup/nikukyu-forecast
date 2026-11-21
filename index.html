@@ -91,12 +91,16 @@
     <link rel="icon" href="/favicon-192.png?v=3" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>にくきゅう天気予報 | アスファルト温度予報</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS（版を固定。3.4.17は固定前の配信内容と同一であることを確認済み） -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <!-- Lucide Icons（版を固定し、integrity で改ざんを検知。版を上げる時は integrity も作り直す。使うアイコン名は1.77.0に全て有り） -->
+    <script
+      src="https://unpkg.com/lucide@1.77.0/dist/umd/lucide.min.js"
+      integrity="sha384-fwFZu/W4jQGjDm7nioPLVWVdT/j9eDRcHN7Otg9U/hRD60LEhWduz/qvBAT1A/Q2"
+      crossorigin="anonymous"
+    ></script>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap");
       body {
         font-family: "Plus Jakarta Sans", "Noto Sans JP", sans-serif;
         background-color: #f8fafc;
@@ -329,6 +333,9 @@
           </div>
           <div
             class="graph-outer-container rounded-2xl border border-slate-100 bg-slate-50/50"
+            tabindex="0"
+            role="group"
+            aria-label="時間別の路面温度グラフ。左右の矢印キーで時間帯を移動、Home・Endで両端"
           >
             <!-- インタラクティブなスワイプ折れ線グラフ -->
             <div id="graph-scroll-area" class="graph-scroll-area">
@@ -376,6 +383,8 @@
         >
           <button
             id="acc-logic-button"
+            aria-expanded="false"
+            aria-controls="acc-logic-content"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -437,6 +446,8 @@
         >
           <button
             id="acc-safety-button"
+            aria-expanded="false"
+            aria-controls="acc-safety-content"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -489,6 +500,8 @@
         >
           <button
             id="acc-disclaimer-button"
+            aria-expanded="false"
+            aria-controls="acc-disclaimer-content"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
@@ -530,6 +543,8 @@
         >
           <button
             id="acc-faq-button"
+            aria-expanded="false"
+            aria-controls="acc-faq-content"
             class="w-full flex items-center justify-between p-4 font-bold text-slate-700 hover:bg-slate-50/50 text-left text-xs transition-custom"
           >
             <span class="flex items-center gap-2">
