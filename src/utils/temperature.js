@@ -46,8 +46,14 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U, P = 0) {
   return tempAir + dampedTempRise;
 }
 
+// 画面の表示(toFixed(1))と同じ小数1桁の値。判定にも使い、表示と判定を食い違わせない
+export function roundForDisplay(surfaceTemp) {
+  return Number(surfaceTemp.toFixed(1));
+}
+
 export function getStatusMetadata(surfaceTemp) {
-  if (surfaceTemp <= SURFACE_TEMP_SAFE_MAX) {
+  const shown = roundForDisplay(surfaceTemp);
+  if (shown <= SURFACE_TEMP_SAFE_MAX) {
     return {
       label: "安全（お散歩に最適）",
       shortLabel: "安全",
@@ -63,7 +69,7 @@ export function getStatusMetadata(surfaceTemp) {
     };
   }
 
-  if (surfaceTemp <= SURFACE_TEMP_CAUTION_MAX) {
+  if (shown <= SURFACE_TEMP_CAUTION_MAX) {
     return {
       label: "注意（日陰を選んで）",
       shortLabel: "注意",
@@ -79,7 +85,7 @@ export function getStatusMetadata(surfaceTemp) {
     };
   }
 
-  if (surfaceTemp <= SURFACE_TEMP_DANGER_MAX) {
+  if (shown <= SURFACE_TEMP_DANGER_MAX) {
     return {
       label: "危険（日向は絶対NG）",
       shortLabel: "危険",
