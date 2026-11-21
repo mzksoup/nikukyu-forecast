@@ -333,7 +333,7 @@ function renderAllForecasts() {
   if (timelineSection) timelineSection.classList.remove("hidden");
 
   initGraphSizing();
-  renderActiveDayTimelineAndGraph(true);
+  renderActiveDayTimelineAndGraph();
 }
 
 function initGraphSizing() {
