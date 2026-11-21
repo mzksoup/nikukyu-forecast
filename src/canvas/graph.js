@@ -29,8 +29,8 @@ function loadMeteoconsIcon(iconName) {
   return promise;
 }
 
-// データラベルの描画範囲(ベースラインからの相対値)。bold 10px sans-serif の
-// 実測に合わせた概算で、衝突判定とテストのボックス計算で同じ値を使う。
+// データラベルの描画範囲(ベースラインからの相対値)。bold 10px の概算値
+// (旧sans-serifで見積もり、Noto Sans JPでは未実測)で、衝突判定とテストのボックス計算で同じ値を使う。
 const LABEL_ASCENT = 8;
 const LABEL_DESCENT = 3;
 
@@ -100,6 +100,7 @@ export async function drawCanvasGraph({
     return startY + graphHeight - ratio * graphHeight;
   };
 
+  // 色の正本は utils/temperature.js の getStatusMetadata。ここは同じ色の透過版（変更時は揃える）
   const bandColors = [
     "rgba(25, 122, 75, 0.08)",
     "rgba(255, 212, 61, 0.15)",

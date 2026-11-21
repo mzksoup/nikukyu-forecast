@@ -46,6 +46,8 @@ export function calculateVerifiedSurfaceTemperature(Ta, Rs, U, P = 0) {
   return tempAir + dampedTempRise;
 }
 
+// 危険度4色の正本。同じ色が index.html の凡例（4つの四角）と canvas/graph.js の
+// 背景帯（bandColors）にもあるため、色を変える時は3か所を揃える
 export function getStatusMetadata(surfaceTemp) {
   if (surfaceTemp <= SURFACE_TEMP_SAFE_MAX) {
     return {
