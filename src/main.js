@@ -18,7 +18,6 @@ import { renderResultCard } from "./render/result-card.js";
 import { renderHourlyGraphDetails } from "./render/timeline.js";
 import { drawCanvasGraph } from "./canvas/graph.js";
 import { keyboardScrollTarget, snapScrollOffset } from "./utils/scroll.js";
-import { createLatestGuard } from "./utils/latest.js";
 import { validateForecast } from "./utils/forecast.js";
 
 // グローバルデータ保持
@@ -43,7 +42,7 @@ const hourStepWidth = HOUR_STEP_WIDTH; // 1時間あたりの幅px
 const graphPaddingLeft = GRAPH_PADDING_LEFT;
 let graphRenderToken = 0;
 // 起動時のデモと現在地の取得が重なっても、最後に始めた取得の結果だけを使う
-const newPredictionRequest = createLatestGuard();
+let predictionToken = 0;
 
 // --- DOM要素とイベントリスナーの安全な初期化処理 ---
 function initDOMElements() {
@@ -287,12 +286,12 @@ async function fetchPrediction(lat, lon) {
       "最新の気象予測データを解析中...";
   }
 
-  const isLatest = newPredictionRequest();
+  const requestToken = ++predictionToken;
   let responseData = null;
   try {
     responseData = validateForecast(await fetchWeatherForecast(lat, lon));
   } catch (error) {
-    if (!isLatest()) return;
+    if (requestToken !== predictionToken) return;
     if (loader) loader.classList.add("hidden");
     showError(
       error instanceof Error
@@ -302,7 +301,7 @@ async function fetchPrediction(lat, lon) {
     return;
   }
 
-  if (!isLatest()) return;
+  if (requestToken !== predictionToken) return;
   if (loader) loader.classList.add("hidden");
 
   const iconBox = document.getElementById("location-icon-box");
